@@ -7,9 +7,12 @@ import type {
   EstimateInput,
   EstimateResult,
   FilingStatus,
+  HouseholdFederalEstimate,
   QbiHighIncomeDetails,
+  SpouseW2Details,
   SstbAnswer,
   StateTaxTreatment,
+  TaxpayerW2Details,
 } from '../lib/tax/types';
 
 type RevenuePeriod = 'annual' | 'monthly';
@@ -23,9 +26,9 @@ interface CalculatorFormState {
   filingStatus: FilingStatus;
   stateCode: StateCode | null;
   stateReserveRate: number | null;
-  otherTaxableIncome: number;
-  taxpayerW2: { box1: number; box3: number; box5: number };
-  spouseW2: { box1: number; box5: number };
+  estimatedFederalPayments: number;
+  taxpayerW2: TaxpayerW2Details;
+  spouseW2: SpouseW2Details;
   qbiHighIncomeDetails: QbiHighIncomeDetails;
   invoiceAmount: number;
 }
@@ -104,15 +107,21 @@ function readCalculatorFormState(): CalculatorFormState {
     filingStatus: parseFilingStatus(requiredSelect('filing-status').value),
     stateCode: isStateCode(stateValue) ? stateValue : null,
     stateReserveRate: readOptionalRate(requiredInput('state-reserve-rate')),
-    otherTaxableIncome: readNumber(requiredInput('other-taxable-income')),
+    estimatedFederalPayments: readNumber(requiredInput('estimated-federal-payments')),
     taxpayerW2: {
       box1: readNumber(requiredInput('taxpayer-box1')),
+      box2: readNumber(requiredInput('taxpayer-box2')),
       box3: readNumber(requiredInput('taxpayer-box3')),
+      box4: readNumber(requiredInput('taxpayer-box4')),
       box5: readNumber(requiredInput('taxpayer-box5')),
+      box6: readNumber(requiredInput('taxpayer-box6')),
     },
     spouseW2: {
       box1: readNumber(requiredInput('spouse-box1')),
+      box2: readNumber(requiredInput('spouse-box2')),
+      box4: readNumber(requiredInput('spouse-box4')),
       box5: readNumber(requiredInput('spouse-box5')),
+      box6: readNumber(requiredInput('spouse-box6')),
     },
     qbiHighIncomeDetails: {
       sstb: parseSstbAnswer(requiredSelect('sstb-status').value),
@@ -134,7 +143,7 @@ function normalizeCalculatorForm(state: CalculatorFormState): EstimateInput {
     filingStatus: state.filingStatus,
     grossReceipts,
     businessExpenses,
-    otherTaxableIncome: state.otherTaxableIncome,
+    estimatedFederalPayments: state.estimatedFederalPayments,
     taxpayerW2: state.taxpayerW2,
     spouseW2: state.spouseW2,
     stateCode: state.stateCode,
@@ -277,6 +286,53 @@ function getQbiNote(result: Extract<EstimateResult, { kind: 'profit' }>): string
   return result.qbiTreatment.reason;
 }
 
+function getFederalBalanceLabel(balance: HouseholdFederalEstimate['balance']): string {
+  if (balance.kind === 'amountDue') {
+    return 'Estimated federal amount due';
+  }
+
+  if (balance.kind === 'estimatedOverpayment') {
+    return 'Estimated overpayment';
+  }
+
+  return 'No remaining federal balance';
+}
+
+function getFederalBalanceNote(balance: HouseholdFederalEstimate['balance']): string {
+  if (balance.kind === 'estimatedOverpayment') {
+    return 'This is an estimated overpayment, not a promised refund. An actual refund depends on your complete tax return and other adjustments.';
+  }
+
+  if (balance.kind === 'amountDue') {
+    return 'After W-2 federal income tax withholding, eligible wage-tax credits, and estimated federal payments.';
+  }
+
+  return 'W-2 withholding, eligible wage-tax credits, and estimated payments match the modeled liability.';
+}
+
+function renderHouseholdFederal(estimate: HouseholdFederalEstimate): void {
+  setText('household-federal-liability', formatCurrency(estimate.liability));
+  setText(
+    'household-federal-withholding',
+    formatCurrency(estimate.payments.federalIncomeTaxWithholding),
+  );
+  setText(
+    'household-estimated-payments',
+    formatCurrency(estimate.payments.estimatedFederalPayments),
+  );
+  setText(
+    'household-excess-social-security',
+    formatCurrency(estimate.payments.excessSocialSecurityWithholding),
+  );
+  setText(
+    'household-additional-medicare-withholding',
+    formatCurrency(estimate.payments.additionalMedicareTaxWithholding),
+  );
+  setText('household-federal-balance-label', getFederalBalanceLabel(estimate.balance));
+  setText('household-federal-balance', formatCurrency(estimate.balance.amount));
+  setText('household-federal-balance-note', getFederalBalanceNote(estimate.balance));
+}
+
 function renderProfit(result: Extract<EstimateResult, { kind: 'profit' }>, invoiceAmount: number): void {
   setText('take-home-annual', formatCurrency(result.takeHomeAnnual));
   setText('take-home-monthly', formatCurrency(result.takeHomeMonthly));
@@ -305,6 +361,7 @@ function renderResult(result: EstimateResult, invoiceAmount: number): void {
   profitResults.hidden = result.kind !== 'profit';
   breakEvenResults.hidden = result.kind !== 'breakEven';
   lossResults.hidden = result.kind !== 'loss';
+  renderHouseholdFederal(result.householdFederal);
 
   if (result.kind === 'profit') {
     renderProfit(result, invoiceAmount);
@@ -313,7 +370,7 @@ function renderResult(result: EstimateResult, invoiceAmount: number): void {
 
   if (result.kind === 'loss') {
     setText('loss-amount', formatCurrency(result.cashDeficit));
-    setText('profit-status-note', `Business loss of ${formatCurrency(result.businessLoss)}. Tax and take-home estimate unavailable.`);
+    setText('profit-status-note', `Business loss of ${formatCurrency(result.businessLoss)}. The household federal estimate below does not apply the loss.`);
     return;
   }
 
@@ -342,14 +399,20 @@ function buildCalculationSummary(
     `Filing status: ${getFilingStatusLabel(state.filingStatus)}`,
     `Gross receipts: ${formatCurrency(input.grossReceipts)}`,
     `Business expenses: ${formatCurrency(input.businessExpenses)}`,
+    `Household federal liability before payments: ${formatCurrency(result.householdFederal.liability)}`,
+    `W-2 federal income tax withheld: ${formatCurrency(result.householdFederal.payments.federalIncomeTaxWithholding)}`,
+    `Estimated federal payments: ${formatCurrency(result.householdFederal.payments.estimatedFederalPayments)}`,
+    `Eligible excess Social Security withholding: ${formatCurrency(result.householdFederal.payments.excessSocialSecurityWithholding)}`,
+    `Additional Medicare Tax withheld: ${formatCurrency(result.householdFederal.payments.additionalMedicareTaxWithholding)}`,
+    `${getFederalBalanceLabel(result.householdFederal.balance)}: ${formatCurrency(result.householdFederal.balance.amount)}`,
   ];
 
   if (result.kind === 'loss') {
     lines.push(`Business loss / cash deficit: ${formatCurrency(result.cashDeficit)}`);
-    lines.push('Tax and take-home estimates are unavailable for a business loss.');
+    lines.push('The household federal estimate uses W-2 income without applying the business loss. Business tax and take-home estimates are unavailable for a loss.');
   } else if (result.kind === 'breakEven') {
     lines.push('Business profit: $0');
-    lines.push('Estimated taxes and take-home: $0 at break-even.');
+    lines.push('Business tax reserve and take-home: $0 at break-even.');
   } else {
     lines.push(`Federal income tax on business: ${formatCurrency(result.federalIncomeTax)}`);
     lines.push(`Self-employment tax: ${formatCurrency(result.selfEmploymentTax)}`);
@@ -364,7 +427,7 @@ function buildCalculationSummary(
 
   const stateName = state.stateCode === null ? 'not selected' : state.stateCode;
   lines.push(`State: ${stateName}`);
-  lines.push(`Assumptions: ${ACTIVE_TAX_YEAR.year} federal rules; one U.S. sole-proprietor business; standard deduction; no credits, itemized deductions, or estimated payments. State tax is included only if a reserve rate was entered.`);
+  lines.push(`Assumptions: ${ACTIVE_TAX_YEAR.year} federal rules; one U.S. sole-proprietor business; standard deduction; excludes itemized deductions and other tax credits. State/local reserve is a user assumption when included.`);
   lines.push('Planning estimate only. Not tax advice or a tax return.');
 
   return lines.join('\n');

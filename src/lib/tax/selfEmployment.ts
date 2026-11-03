@@ -1,11 +1,11 @@
 import { ACTIVE_TAX_YEAR } from './activeYear';
-import type { FilingStatus, SpouseW2Wages, TaxpayerW2Wages } from './types';
+import type { FilingStatus, SpouseW2Details, TaxpayerW2Details } from './types';
 
 export interface SelfEmploymentTaxInput {
   netProfit: number;
   filingStatus: FilingStatus;
-  taxpayerW2: TaxpayerW2Wages;
-  spouseW2?: SpouseW2Wages;
+  taxpayerW2: TaxpayerW2Details;
+  spouseW2?: SpouseW2Details;
 }
 
 export interface SelfEmploymentTaxResult {

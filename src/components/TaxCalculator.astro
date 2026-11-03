@@ -102,26 +102,35 @@ import { STATES } from '../lib/tax/states';
         <span id="state-help" class="field-help mt-2">Your own percentage of business profit; this is not a state tax calculation.</span>
       </label>
 
-      <details id="other-income-details" class="details-card">
+      <details id="w2-details" class="details-card">
         <summary class="details-summary">
-          <span><span class="block font-medium text-ink">Add other income</span><span class="mt-1 block text-xs font-normal text-muted">Optional W-2 wages and other taxable income</span></span>
+          <span><span class="block font-medium text-ink">Add W-2 wages and payments</span><span class="mt-1 block text-xs font-normal text-muted">Optional household wage details</span></span>
           <svg class="details-chevron" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </summary>
         <div class="details-content space-y-5">
-          <p class="field-help">Add totals from all of your W-2s. Box 1, 3, and 5 serve different purposes in the estimate.</p>
-          <div class="grid gap-3 sm:grid-cols-3">
-            <label class="field-label" for="taxpayer-box1"><span>W-2 Box 1</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box1" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
-            <label class="field-label" for="taxpayer-box3"><span>W-2 Box 3</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box3" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
-            <label class="field-label" for="taxpayer-box5"><span>W-2 Box 5</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box5" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
-          </div>
-          <div id="spouse-wages-fields" class="space-y-3" hidden>
-            <div><h3 class="text-sm font-medium text-ink">Spouse’s W-2 wages</h3><p class="field-help mt-1">For a joint return, add the spouse’s totals from all W-2s.</p></div>
-            <div class="grid gap-3 sm:grid-cols-2">
-              <label class="field-label" for="spouse-box1"><span>Spouse W-2 Box 1</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box1" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
-              <label class="field-label" for="spouse-box5"><span>Spouse W-2 Box 5</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box5" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+          <p class="field-help">Enter annual totals across your W-2s. Box 1 is federal wages; Box 2 is federal income tax withheld; Box 3 is Social Security wages; Box 4 is Social Security tax withheld; Box 5 is Medicare wages; and Box 6 is Medicare tax withheld, including any Additional Medicare Tax.</p>
+          <div>
+            <h3 class="text-sm font-medium text-ink">Your W-2 totals</h3>
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+              <label class="field-label" for="taxpayer-box1"><span>Box 1 · Federal wages</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box1" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="taxpayer-box2"><span>Box 2 · Federal tax withheld</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box2" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="taxpayer-box3"><span>Box 3 · Social Security wages</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box3" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="taxpayer-box4"><span>Box 4 · Social Security tax withheld</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box4" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" aria-describedby="taxpayer-box4-help" /></span><span id="taxpayer-box4-help" class="field-help mt-1">A credit generally applies only when multiple employers withheld more than the annual maximum.</span></label>
+              <label class="field-label" for="taxpayer-box5"><span>Box 5 · Medicare wages</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box5" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="taxpayer-box6"><span>Box 6 · Medicare tax withheld</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box6" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" aria-describedby="taxpayer-box6-help" /></span><span id="taxpayer-box6-help" class="field-help mt-1">Includes regular Medicare withholding; only the eligible Additional Medicare amount is credited.</span></label>
             </div>
           </div>
-          <label class="field-label" for="other-taxable-income"><span>Other annual ordinary taxable income</span><span class="input-wrap mt-2 max-w-72"><span class="input-prefix" aria-hidden="true">$</span><input id="other-taxable-income" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" aria-describedby="other-income-help" /></span><span id="other-income-help" class="field-help mt-2">Exclude W-2 wages, this business’s profit, capital gains, and qualified dividends.</span></label>
+          <div id="spouse-wages-fields" class="space-y-3" hidden>
+            <div><h3 class="text-sm font-medium text-ink">Spouse’s W-2 totals</h3><p class="field-help mt-1">For a joint return, enter the spouse’s Boxes 1, 2, 4, 5, and 6. Spouse Box 3 does not reduce your self-employment Social Security wage base.</p></div>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="field-label" for="spouse-box1"><span>Box 1 · Federal wages</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box1" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="spouse-box2"><span>Box 2 · Federal tax withheld</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box2" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="spouse-box4"><span>Box 4 · Social Security tax withheld</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box4" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" aria-describedby="spouse-box4-help" /></span><span id="spouse-box4-help" class="field-help mt-1">A credit generally applies only when multiple employers withheld more than the annual maximum.</span></label>
+              <label class="field-label" for="spouse-box5"><span>Box 5 · Medicare wages</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box5" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="spouse-box6"><span>Box 6 · Medicare tax withheld</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box6" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+            </div>
+          </div>
+          <label class="field-label" for="estimated-federal-payments"><span>Estimated federal tax payments <span class="font-normal text-faint">(optional)</span></span><span class="input-wrap mt-2 max-w-72"><span class="input-prefix" aria-hidden="true">$</span><input id="estimated-federal-payments" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" aria-describedby="estimated-payments-help" /></span><span id="estimated-payments-help" class="field-help mt-2">Total payments made or planned for the {ACTIVE_TAX_YEAR.year} tax year, separate from W-2 withholding. Blank and zero are accepted.</span></label>
         </div>
       </details>
 
@@ -192,13 +201,26 @@ import { STATES } from '../lib/tax/states';
       <div id="break-even-results" class="mt-6 rounded-xl border border-line bg-surface-muted p-5" hidden>
         <p class="text-xs font-medium uppercase tracking-[0.12em] text-muted">Break-even</p>
         <p class="mt-2 text-3xl font-semibold tracking-tight text-ink">$0 estimated take-home</p>
-        <p class="mt-2 text-sm leading-6 text-muted">Revenue is fully used by expenses. Estimated business tax reserve and take-home are both $0 at break-even.</p>
+        <p class="mt-2 text-sm leading-6 text-muted">Revenue is fully used by expenses. Business tax reserve and take-home are $0 at break-even; the household federal estimate below still includes W-2 wages and payments entered.</p>
       </div>
 
       <div id="loss-results" class="mt-6 rounded-xl border border-loss/25 bg-loss-soft p-5" hidden>
         <p class="text-xs font-medium uppercase tracking-[0.12em] text-loss">Cash deficit</p>
         <p id="loss-amount" class="mt-2 text-3xl font-semibold tracking-tight text-ink">—</p>
-        <p class="mt-2 text-sm leading-6 text-muted">Expenses exceed receipts. This estimate doesn’t calculate a tax benefit or take-home pay for a business loss.</p>
+        <p class="mt-2 text-sm leading-6 text-muted">Expenses exceed receipts. The household federal estimate below uses W-2 income without applying the business loss; this estimate doesn’t calculate a loss tax benefit or business take-home.</p>
+      </div>
+
+      <div id="household-federal-results" class="mt-5 rounded-xl border border-line bg-surface-muted p-4" aria-labelledby="household-federal-heading">
+        <h3 id="household-federal-heading" class="text-sm font-semibold text-ink">Household federal estimate</h3>
+        <div class="mt-2 divide-y divide-line text-sm">
+          <div class="tax-row"><span>Federal tax liability before payments</span><strong id="household-federal-liability">—</strong></div>
+          <div class="tax-row"><span>W-2 federal income tax withheld</span><strong id="household-federal-withholding">—</strong></div>
+          <div class="tax-row"><span>Estimated federal tax payments</span><strong id="household-estimated-payments">—</strong></div>
+          <div class="tax-row"><span>Eligible excess Social Security withholding</span><strong id="household-excess-social-security">—</strong></div>
+          <div class="tax-row"><span>Additional Medicare Tax withheld</span><strong id="household-additional-medicare-withholding">—</strong></div>
+          <div class="tax-row font-semibold text-ink"><span id="household-federal-balance-label">Remaining federal balance</span><strong id="household-federal-balance">—</strong></div>
+        </div>
+        <p id="household-federal-balance-note" class="mt-2 text-xs leading-5 text-muted"></p>
       </div>
 
       <div class="mt-5 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">

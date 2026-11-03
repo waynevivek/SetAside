@@ -10,15 +10,21 @@ export const FILING_STATUSES = [
 
 export type FilingStatus = (typeof FILING_STATUSES)[number];
 
-export interface TaxpayerW2Wages {
+export interface TaxpayerW2Details {
   box1: number;
+  box2: number;
   box3: number;
+  box4: number;
   box5: number;
+  box6: number;
 }
 
-export interface SpouseW2Wages {
+export interface SpouseW2Details {
   box1: number;
+  box2: number;
+  box4: number;
   box5: number;
+  box6: number;
 }
 
 export type SstbAnswer = 'yes' | 'no' | 'unsure';
@@ -32,9 +38,9 @@ export interface EstimateInput {
   filingStatus: FilingStatus;
   grossReceipts: number;
   businessExpenses: number;
-  otherTaxableIncome: number;
-  taxpayerW2: TaxpayerW2Wages;
-  spouseW2?: SpouseW2Wages;
+  estimatedFederalPayments: number;
+  taxpayerW2: TaxpayerW2Details;
+  spouseW2?: SpouseW2Details;
   stateCode: StateCode | null;
   stateReserveRate: number | null;
   qbiHighIncomeDetails?: QbiHighIncomeDetails;
@@ -85,11 +91,34 @@ export type StateTaxTreatment =
   | { status: 'included'; amount: number; rate: number }
   | { status: 'omitted'; amount: 0; reason: string };
 
+export interface HouseholdFederalPayments {
+  federalIncomeTaxWithholding: number;
+  estimatedFederalPayments: number;
+  excessSocialSecurityWithholding: number;
+  additionalMedicareTaxWithholding: number;
+  total: number;
+}
+
+export type FederalBalance =
+  | { kind: 'amountDue'; amount: number }
+  | { kind: 'estimatedOverpayment'; amount: number }
+  | { kind: 'settled'; amount: 0 };
+
+export interface HouseholdFederalEstimate {
+  incomeTax: number;
+  selfEmploymentTax: number;
+  additionalMedicareTax: number;
+  liability: number;
+  payments: HouseholdFederalPayments;
+  balance: FederalBalance;
+}
+
 export interface BreakEvenEstimate {
   kind: 'breakEven';
   grossReceipts: number;
   businessExpenses: number;
   businessProfit: 0;
+  householdFederal: HouseholdFederalEstimate;
 }
 
 export interface LossEstimate {
@@ -98,6 +127,7 @@ export interface LossEstimate {
   businessExpenses: number;
   businessLoss: number;
   cashDeficit: number;
+  householdFederal: HouseholdFederalEstimate;
 }
 
 export interface ProfitEstimate {
@@ -109,6 +139,7 @@ export interface ProfitEstimate {
   selfEmploymentTax: number;
   additionalMedicareTax: number;
   stateTax: StateTaxTreatment;
+  householdFederal: HouseholdFederalEstimate;
   totalEstimatedTax: number;
   takeHomeAnnual: number;
   takeHomeMonthly: number;

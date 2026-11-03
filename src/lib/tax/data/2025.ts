@@ -18,6 +18,10 @@ export const TAX_YEAR_2025: TaxYearData = {
       url: 'https://www.irs.gov/instructions/i1040sse',
     },
     {
+      title: 'Instructions for Form 1040, 2025',
+      url: 'https://www.irs.gov/instructions/i1040gi',
+    },
+    {
       title: 'Instructions for Form 8959, 2025',
       url: 'https://www.irs.gov/instructions/i8959',
     },
