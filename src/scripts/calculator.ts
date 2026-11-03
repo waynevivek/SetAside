@@ -52,7 +52,7 @@ function requiredSelect(id: string): HTMLSelectElement {
 }
 
 function readNumber(input: HTMLInputElement): number {
-  const value = input.value.trim();
+  const value = input.value.trim().replaceAll(',', '');
 
   if (value === '') {
     return 0;
@@ -60,6 +60,13 @@ function readNumber(input: HTMLInputElement): number {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function formatGroupedNumber(value: string): string {
+  const [integerPart, fractionalPart] = value.replaceAll(',', '').split('.');
+  const groupedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  return fractionalPart === undefined ? groupedInteger : `${groupedInteger}.${fractionalPart}`;
 }
 
 function readOptionalRate(input: HTMLInputElement): number | null {
@@ -589,8 +596,17 @@ function initializeCalculator(): void {
     setText('copy-status', '');
   };
 
+  revenueInput.addEventListener('blur', () => {
+    const value = revenueInput.value.trim().replaceAll(',', '');
+    const amount = Number(value);
+
+    if (value !== '' && Number.isFinite(amount) && amount >= 0) {
+      revenueInput.value = formatGroupedNumber(value);
+    }
+  });
+
   revenueRange.addEventListener('input', () => {
-    revenueInput.value = revenueRange.value;
+    revenueInput.value = formatGroupedNumber(revenueRange.value);
   });
   expensePercentRange.addEventListener('input', () => {
     expensePercentInput.value = expensePercentRange.value;
@@ -613,7 +629,7 @@ function initializeCalculator(): void {
 
       const currentValue = readNumber(revenueInput);
       const convertedValue = nextPeriod === 'monthly' ? currentValue / 12 : currentValue * 12;
-      revenueInput.value = String(Number(convertedValue.toFixed(2)));
+      revenueInput.value = formatGroupedNumber(String(Number(convertedValue.toFixed(2))));
 
       for (const periodButton of document.querySelectorAll<HTMLButtonElement>('[data-revenue-period]')) {
         const selected = periodButton === button;

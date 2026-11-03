@@ -22,7 +22,7 @@ import { STATES } from '../lib/tax/states';
             <span id="revenue-label">Annual gross revenue</span>
             <span class="input-wrap mt-2">
               <span class="input-prefix" aria-hidden="true">$</span>
-              <input id="gross-revenue-number" class="number-input pl-8" type="number" inputmode="decimal" min="0" step="any" value="60000" aria-describedby="revenue-help" />
+              <input id="gross-revenue-number" class="number-input pl-8" type="text" inputmode="decimal" value="60,000" aria-describedby="revenue-help" />
             </span>
           </label>
           <div class="segmented" role="group" aria-label="Revenue period">
@@ -157,7 +157,7 @@ import { STATES } from '../lib/tax/states';
       </div>
       <p class="mt-1 text-sm text-muted">After expenses and the taxes included below</p>
 
-      <div id="profit-results" class="mt-6">
+      <div id="profit-results" class="mt-7">
         <div class="result-hero">
           <div>
             <p class="text-xs font-medium uppercase tracking-[0.12em] text-muted">Annual take-home</p>
@@ -169,37 +169,40 @@ import { STATES } from '../lib/tax/states';
           </div>
         </div>
 
-        <div class="mt-5 flex flex-col gap-3 rounded-xl border border-accent/20 bg-accent-soft p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div><p class="text-sm font-semibold text-ink">Suggested tax reserve</p><p id="reserve-recommendation" class="mt-1 text-sm text-muted" aria-live="polite">—</p></div>
-          <label class="field-label w-full sm:max-w-36" for="invoice-amount"><span class="text-xs text-muted">Invoice amount</span><span class="input-wrap mt-1"><span class="input-prefix" aria-hidden="true">$</span><input id="invoice-amount" class="number-input pl-8" type="number" min="0" step="any" value="1000" inputmode="decimal" /></span></label>
-          <p class="invoice-reserve"><span id="invoice-reserve-amount">—</span><span class="mt-0.5 block text-[11px] font-medium uppercase tracking-wide text-muted">to reserve</span></p>
+        <div class="mt-7 grid grid-cols-1 gap-4 rounded-xl border border-accent/20 bg-accent-soft p-4 sm:grid-cols-[minmax(0,1fr)_9rem_auto] sm:items-center sm:gap-4 sm:p-5">
+          <div class="min-w-0"><p class="text-sm font-semibold text-ink">Suggested tax reserve</p><p id="reserve-recommendation" class="mt-1 text-sm text-muted" aria-live="polite">—</p></div>
+          <label class="field-label w-full" for="invoice-amount"><span class="text-xs text-muted">Invoice amount</span><span class="input-wrap mt-1"><span class="input-prefix" aria-hidden="true">$</span><input id="invoice-amount" class="number-input pl-8" type="number" min="0" step="any" value="1000" inputmode="decimal" /></span></label>
+          <p class="invoice-reserve min-w-32 text-left sm:text-right"><span id="invoice-reserve-amount">—</span><span class="mt-0.5 block text-[11px] font-medium uppercase tracking-wide text-muted">to reserve</span></p>
         </div>
 
-        <div class="mt-6">
-          <div class="mb-3 flex items-center justify-between gap-3"><h3 class="text-sm font-semibold text-ink">Where revenue goes</h3><span class="text-xs text-muted">Annual</span></div>
+        <div class="mt-8">
+          <div class="mb-4 flex items-center justify-between gap-3"><h3 class="text-sm font-semibold text-ink">Where revenue goes</h3><span class="text-xs text-muted">Annual</span></div>
           <div id="breakdown-bar" class="breakdown-bar" role="img" aria-label="Revenue breakdown"></div>
-          <ul class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted sm:grid-cols-5">
+          <ul class="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 text-xs text-muted sm:grid-cols-2">
             <li class="legend-item"><span class="legend-dot bg-expenses"></span><span>Expenses</span><strong id="breakdown-expenses" class="text-ink">—</strong></li>
             <li class="legend-item"><span class="legend-dot bg-taxes"></span><span>Federal taxes on business</span><strong id="breakdown-federal-tax" class="text-ink">—</strong></li>
             <li class="legend-item"><span class="legend-dot bg-state-reserve"></span><span>State/local reserve assumption</span><strong id="breakdown-state-reserve" class="text-ink">—</strong></li>
             <li class="legend-item"><span class="legend-dot bg-net"></span><span>Take-home</span><strong id="breakdown-net" class="text-ink">—</strong></li>
-            <li id="breakdown-gap-row" class="legend-item col-span-2 sm:col-span-1" hidden><span class="legend-dot bg-gap"></span><span>Cash gap</span><strong id="breakdown-gap" class="text-ink">—</strong></li>
+            <li id="breakdown-gap-row" class="legend-item" hidden><span class="legend-dot bg-gap"></span><span>Cash gap</span><strong id="breakdown-gap" class="text-ink">—</strong></li>
           </ul>
         </div>
 
-        <div class="mt-6 divide-y divide-line border-y border-line text-sm">
-          <div class="tax-row"><span>Federal income tax on business</span><strong id="federal-tax-amount">—</strong></div>
-          <div class="tax-row"><span>Self-employment tax</span><strong id="se-tax-amount">—</strong></div>
-          <div class="tax-row"><span>Additional Medicare tax</span><strong id="additional-medicare-amount">—</strong></div>
-          <div class="tax-row"><span id="state-tax-label">State/local reserve</span><strong id="state-tax-amount">—</strong></div>
-          <div class="tax-row font-semibold text-ink"><span>Total business tax and reserve</span><strong id="total-tax-amount">—</strong></div>
+        <div class="mt-8 border-t border-line pt-5">
+          <h3 class="text-sm font-semibold text-ink">Business tax and reserve</h3>
+          <div class="mt-2 divide-y divide-line border-y border-line text-sm">
+            <div class="tax-row"><span>Federal income tax on business</span><strong id="federal-tax-amount">—</strong></div>
+            <div class="tax-row"><span>Self-employment tax</span><strong id="se-tax-amount">—</strong></div>
+            <div class="tax-row"><span>Additional Medicare tax</span><strong id="additional-medicare-amount">—</strong></div>
+            <div class="tax-row"><span id="state-tax-label">State/local reserve</span><strong id="state-tax-amount">—</strong></div>
+            <div class="tax-row font-semibold text-ink"><span>Total business tax and reserve</span><strong id="total-tax-amount">—</strong></div>
+          </div>
         </div>
         <p id="state-result-note" class="mt-3 text-xs leading-5 text-muted" aria-live="polite"></p>
         <p id="qbi-result-note" class="mt-2 text-xs leading-5 text-muted"></p>
         <p id="profit-status-note" class="sr-only" aria-live="polite"></p>
       </div>
 
-      <div id="break-even-results" class="mt-6 rounded-xl border border-line bg-surface-muted p-5" hidden>
+      <div id="break-even-results" class="mt-7 rounded-xl border border-line bg-surface-muted p-5 sm:p-6" hidden>
         <p class="text-xs font-medium uppercase tracking-[0.12em] text-muted">Break-even</p>
         <p class="mt-2 text-3xl font-semibold tracking-tight text-ink"><span id="break-even-take-home-annual">$0</span> annual business take-home</p>
         <div class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
@@ -211,13 +214,13 @@ import { STATES } from '../lib/tax/states';
         <p class="mt-3 text-sm leading-6 text-muted">Revenue is fully used by expenses, so business profit and reserve are $0. The household federal estimate below still includes W-2 wages and payments entered.</p>
       </div>
 
-      <div id="loss-results" class="mt-6 rounded-xl border border-loss/25 bg-loss-soft p-5" hidden>
+      <div id="loss-results" class="mt-7 rounded-xl border border-loss/25 bg-loss-soft p-5 sm:p-6" hidden>
         <p class="text-xs font-medium uppercase tracking-[0.12em] text-loss">Cash deficit</p>
         <p id="loss-amount" class="mt-2 text-3xl font-semibold tracking-tight text-ink">—</p>
         <p class="mt-2 text-sm leading-6 text-muted">Expenses exceed receipts. The household federal estimate below uses W-2 income without applying the loss, so it may be higher than your actual liability. This estimate doesn’t calculate a loss tax benefit or business take-home.</p>
       </div>
 
-      <div id="household-federal-results" class="mt-5 rounded-xl border border-line bg-surface-muted p-4" aria-labelledby="household-federal-heading">
+      <div id="household-federal-results" class="mt-6 rounded-xl border border-line bg-surface-muted p-4 sm:p-5" aria-labelledby="household-federal-heading">
         <h3 id="household-federal-heading" class="text-sm font-semibold text-ink">Household federal estimate</h3>
         <div class="mt-2 divide-y divide-line text-sm">
           <div class="tax-row"><span>Federal tax liability before payments</span><strong id="household-federal-liability">—</strong></div>
