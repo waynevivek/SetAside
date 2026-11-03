@@ -201,14 +201,20 @@ import { STATES } from '../lib/tax/states';
 
       <div id="break-even-results" class="mt-6 rounded-xl border border-line bg-surface-muted p-5" hidden>
         <p class="text-xs font-medium uppercase tracking-[0.12em] text-muted">Break-even</p>
-        <p class="mt-2 text-3xl font-semibold tracking-tight text-ink">$0 estimated take-home</p>
-        <p class="mt-2 text-sm leading-6 text-muted">Revenue is fully used by expenses. Business tax reserve and take-home are $0 at break-even; the household federal estimate below still includes W-2 wages and payments entered.</p>
+        <p class="mt-2 text-3xl font-semibold tracking-tight text-ink"><span id="break-even-take-home-annual">$0</span> annual business take-home</p>
+        <div class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <div><p class="text-xs text-muted">Annual business profit</p><strong id="break-even-business-profit" class="mt-1 block text-ink">$0</strong></div>
+          <div><p class="text-xs text-muted">Monthly business take-home</p><strong id="break-even-take-home-monthly" class="mt-1 block text-ink">$0</strong></div>
+          <div><p class="text-xs text-muted">Business reserve rate</p><strong id="break-even-reserve-rate" class="mt-1 block text-ink">0%</strong></div>
+          <div><p class="text-xs text-muted">Reserve for invoice</p><strong id="break-even-invoice-reserve" class="mt-1 block text-ink">$0</strong><span id="break-even-invoice-context" class="mt-1 block text-xs text-muted">for this invoice</span></div>
+        </div>
+        <p class="mt-3 text-sm leading-6 text-muted">Revenue is fully used by expenses, so business profit and reserve are $0. The household federal estimate below still includes W-2 wages and payments entered.</p>
       </div>
 
       <div id="loss-results" class="mt-6 rounded-xl border border-loss/25 bg-loss-soft p-5" hidden>
         <p class="text-xs font-medium uppercase tracking-[0.12em] text-loss">Cash deficit</p>
         <p id="loss-amount" class="mt-2 text-3xl font-semibold tracking-tight text-ink">—</p>
-        <p class="mt-2 text-sm leading-6 text-muted">Expenses exceed receipts. The household federal estimate below uses W-2 income without applying the business loss; this estimate doesn’t calculate a loss tax benefit or business take-home.</p>
+        <p class="mt-2 text-sm leading-6 text-muted">Expenses exceed receipts. The household federal estimate below uses W-2 income without applying the loss, so it may be higher than your actual liability. This estimate doesn’t calculate a loss tax benefit or business take-home.</p>
       </div>
 
       <div id="household-federal-results" class="mt-5 rounded-xl border border-line bg-surface-muted p-4" aria-labelledby="household-federal-heading">

@@ -178,6 +178,11 @@ test('retains the W-2 household estimate at break-even', () => {
   }
 
   assert.equal(roundToFourDecimals(result.householdFederal.incomeTax), 5_071.5);
+  assert.equal(result.totalEstimatedTax, 0);
+  assert.equal(result.takeHomeAnnual, 0);
+  assert.equal(result.takeHomeMonthly, 0);
+  assert.equal(result.reserveRate, 0);
+  assert.equal(result.reservePercent, 0);
   assert.equal(result.householdFederal.selfEmploymentTax, 0);
   assert.equal(result.householdFederal.payments.federalIncomeTaxWithholding, 4_000);
   assert.equal(result.householdFederal.payments.estimatedFederalPayments, 1_000);
@@ -207,6 +212,8 @@ test('shows a W-2 household estimate for a business loss without applying the lo
   assert.equal(result.householdFederal.additionalMedicareTax, 0);
   assert.equal(result.householdFederal.liability, 5_071.5);
   assert.equal(result.businessLoss, 10_000);
+  assert.equal('takeHomeAnnual' in result, false);
+  assert.equal('reservePercent' in result, false);
 });
 
 test('attributes household federal tax changes to the business and reconciles take-home', () => {

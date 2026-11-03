@@ -172,6 +172,11 @@ export function estimateTax(input: EstimateInput): EstimateResult {
       grossReceipts,
       businessExpenses,
       businessProfit: 0,
+      totalEstimatedTax: 0,
+      takeHomeAnnual: 0,
+      takeHomeMonthly: 0,
+      reserveRate: 0,
+      reservePercent: 0,
       householdFederal: getW2OnlyHouseholdFederalEstimate(
         input.filingStatus,
         taxpayerW2,
