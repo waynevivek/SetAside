@@ -1,0 +1,75 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import TaxCalculator from '../components/TaxCalculator.astro';
+
+const pageTitle = 'Freelancer Tax & Take-Home Estimator | SetAside';
+const pageDescription = 'Estimate federal self-employment taxes, take-home pay, and a practical tax reserve for your freelance or creator income. Free, private, and calculated in your browser.';
+
+const faqs = [
+  {
+    question: 'How much should a freelancer set aside for taxes?',
+    answer: 'There is no single rate that fits every freelancer. This estimate combines federal income tax, self-employment tax, any Additional Medicare Tax, and an optional state or local reserve you choose. The suggested rate is rounded up to the next whole percentage point and should be reviewed as your income changes.',
+  },
+  {
+    question: 'Does this calculator estimate my state income tax?',
+    answer: 'No. State and local tax systems depend on more than one flat percentage. You can enter a personal reserve rate applied to business profit. If you leave it blank, the result excludes state and local income taxes. A zero percent default for states without individual income tax does not include local or business taxes.',
+  },
+  {
+    question: 'Does an LLC change my federal filing status?',
+    answer: 'An LLC is a legal business structure, not a federal filing status. This estimator covers a sole proprietorship or a default single-member LLC that is taxed as a sole proprietorship. It does not model S corporations, partnerships, or corporations.',
+  },
+  {
+    question: 'Is this estimate the same as my tax return?',
+    answer: 'No. It is a cash-planning estimate for one U.S. self-employed business. It uses 2026 federal brackets and the standard deduction, and it omits credits, itemized deductions, several special deductions, estimated payments, and other tax rules. Your actual return may differ.',
+  },
+  {
+    question: 'Are my income and expense numbers stored or sent anywhere?',
+    answer: 'The calculator runs in this browser tab. It does not send financial inputs to a server or save them in cookies or browser storage. The summary is copied only when you press the copy button.',
+  },
+];
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <main class="mx-auto w-full max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+    <header class="flex items-center justify-between border-b border-line py-5">
+      <a href="#top" class="flex items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" aria-label="SetAside home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="text-sm font-semibold tracking-tight text-ink">SetAside</span>
+      </a>
+      <a class="text-xs font-medium text-muted transition-colors hover:text-ink" href="#faq">Tax estimate FAQ</a>
+    </header>
+
+    <section id="top" class="mx-auto max-w-3xl pb-8 pt-10 text-center sm:pb-10 sm:pt-14">
+      <p class="eyebrow justify-center"><span class="privacy-dot"></span>Private by design <span class="mx-1 text-faint">·</span> U.S. federal estimate</p>
+      <h1 class="mx-auto mt-4 max-w-2xl text-3xl font-semibold leading-[1.08] tracking-[-0.04em] text-ink sm:text-5xl">Know what to keep.<br class="hidden sm:block" /> Know what to set aside.</h1>
+      <p class="mx-auto mt-4 max-w-xl text-sm leading-6 text-muted sm:text-base">A quick tax and take-home estimate for independent work. Adjust your numbers and see the result update instantly.</p>
+    </section>
+
+    <TaxCalculator />
+
+    <section class="mx-auto mt-8 max-w-6xl rounded-xl border border-line bg-surface-muted px-5 py-4 sm:flex sm:items-start sm:gap-3 sm:px-6" aria-label="Privacy and estimate notes">
+      <svg class="mt-0.5 h-5 w-5 shrink-0 text-accent" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="4" y="8.5" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6.5 8.5v-2a3.5 3.5 0 1 1 7 0v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="12.5" r="1" fill="currentColor"/></svg>
+      <p class="mt-2 text-xs leading-5 text-muted sm:mt-0"><strong class="font-semibold text-ink">Your numbers stay on this device.</strong> No account, analytics, cookies, or saved calculator history. This is a planning estimate for a single self-employed business, not tax advice or a filed return. It assumes the standard deduction and excludes credits, itemized deductions, some additional deductions, and many household-specific rules.</p>
+    </section>
+
+    <section id="faq" class="mx-auto mt-16 max-w-3xl scroll-mt-8 sm:mt-20" aria-labelledby="faq-title">
+      <div class="border-b border-line pb-5">
+        <p class="eyebrow">A few useful details</p>
+        <h2 id="faq-title" class="mt-2 text-2xl font-semibold tracking-tight text-ink">Freelancer tax questions</h2>
+      </div>
+      <div class="divide-y divide-line">
+        {faqs.map((faq) => (
+          <details class="faq-item">
+            <summary class="faq-question">{faq.question}<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg></summary>
+            <p class="max-w-2xl pb-5 pr-8 text-sm leading-6 text-muted">{faq.answer}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+
+    <footer class="mx-auto mt-16 flex max-w-6xl flex-col gap-2 border-t border-line pt-5 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+      <span>SetAside · 2026 federal tax estimate</span>
+      <span>For planning only. Verify your situation with a qualified tax professional.</span>
+    </footer>
+  </main>
+</BaseLayout>

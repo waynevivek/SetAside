@@ -1,0 +1,217 @@
+---
+import { STATES } from '../lib/tax/states';
+---
+
+<section id="calculator" class="mx-auto grid w-full max-w-6xl gap-5 lg:grid-cols-[1.02fr_0.98fr] lg:items-start" aria-label="Tax and take-home calculator">
+  <div class="panel p-5 sm:p-7">
+    <div class="mb-7 flex items-start justify-between gap-4">
+      <div>
+        <p class="eyebrow">Your numbers</p>
+        <h2 class="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">Build your estimate</h2>
+        <p class="mt-2 max-w-lg text-sm leading-6 text-muted">Use your expected annual business receipts before expenses. Your entries stay in this tab.</p>
+      </div>
+      <span class="year-chip">2026 tax year</span>
+    </div>
+
+    <form id="tax-form" class="space-y-7" autocomplete="off" novalidate>
+      <fieldset class="space-y-4 border-0 p-0">
+        <legend class="field-legend">Business income</legend>
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <label class="field-label min-w-48 flex-1" for="gross-revenue-number">
+            <span id="revenue-label">Annual gross revenue</span>
+            <span class="input-wrap mt-2">
+              <span class="input-prefix" aria-hidden="true">$</span>
+              <input id="gross-revenue-number" class="number-input pl-8" type="number" inputmode="decimal" min="0" step="any" value="60000" aria-describedby="revenue-help" />
+            </span>
+          </label>
+          <div class="segmented" role="group" aria-label="Revenue period">
+            <button type="button" class="segment-button is-selected" data-revenue-period="annual" aria-pressed="true">Annual</button>
+            <button type="button" class="segment-button" data-revenue-period="monthly" aria-pressed="false">Monthly</button>
+          </div>
+        </div>
+        <p id="revenue-help" class="field-help">Enter business receipts before expenses, excluding sales tax collected and refunds. Monthly revenue is multiplied by 12; seasonality isn’t modeled.</p>
+        <div class="slider-row">
+          <label class="sr-only" for="gross-revenue-range">Adjust gross revenue</label>
+          <input id="gross-revenue-range" class="range-input" type="range" min="0" max="300000" step="100" value="60000" aria-label="Adjust gross revenue" />
+          <div class="range-scale"><span>$0</span><span id="gross-range-max-label">$300,000</span></div>
+        </div>
+      </fieldset>
+
+      <fieldset class="space-y-4 border-0 p-0">
+        <legend class="field-legend">Business expenses</legend>
+        <div class="flex flex-wrap justify-end gap-3">
+          <div class="segmented" role="group" aria-label="Expense calculation method">
+            <button type="button" class="segment-button is-selected" data-expense-mode="percent" aria-pressed="true">Percent</button>
+            <button type="button" class="segment-button" data-expense-mode="flat" aria-pressed="false">Annual amount</button>
+          </div>
+        </div>
+        <label id="expense-percent-field" class="field-label" for="expense-percent-number">
+          <span>Share of revenue spent</span>
+          <span class="input-wrap mt-2">
+            <input id="expense-percent-number" class="number-input pr-9" type="number" inputmode="decimal" min="0" max="100" step="any" value="25" aria-describedby="expense-help" />
+            <span class="input-suffix" aria-hidden="true">%</span>
+          </span>
+        </label>
+        <label id="expense-flat-field" class="field-label" for="expense-flat-number" hidden>
+          <span>Annual business expenses</span>
+          <span class="input-wrap mt-2">
+            <span class="input-prefix" aria-hidden="true">$</span>
+            <input id="expense-flat-number" class="number-input pl-8" type="number" inputmode="decimal" min="0" step="any" value="15000" aria-describedby="expense-help" />
+          </span>
+        </label>
+        <p id="expense-help" class="field-help">Use deductible business expenses you expect for the full year.</p>
+        <div id="expense-percent-slider" class="slider-row">
+          <label class="sr-only" for="expense-percent-range">Adjust business expense percentage</label>
+          <input id="expense-percent-range" class="range-input" type="range" min="0" max="100" step="1" value="25" aria-label="Adjust business expense percentage" />
+          <div class="range-scale"><span>0%</span><span>100%</span></div>
+        </div>
+        <div id="expense-flat-slider" class="slider-row" hidden>
+          <label class="sr-only" for="expense-flat-range">Adjust annual business expenses</label>
+          <input id="expense-flat-range" class="range-input" type="range" min="0" max="300000" step="100" value="15000" aria-label="Adjust annual business expenses" />
+          <div class="range-scale"><span>$0</span><span id="expense-range-max-label">$300,000</span></div>
+        </div>
+      </fieldset>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="field-label" for="filing-status">
+          <span>Federal filing status</span>
+          <select id="filing-status" class="select-input mt-2">
+            <option value="single" selected>Single</option>
+            <option value="marriedJoint">Married filing jointly</option>
+            <option value="marriedSeparate">Married filing separately</option>
+            <option value="headOfHousehold">Head of household</option>
+            <option value="qualifyingSurvivingSpouse">Qualifying surviving spouse</option>
+          </select>
+        </label>
+        <label class="field-label" for="state-code">
+          <span>State or D.C.</span>
+          <select id="state-code" class="select-input mt-2">
+            <option value="">Choose a state</option>
+            {STATES.map((state) => <option value={state.code}>{state.name}</option>)}
+          </select>
+        </label>
+      </div>
+
+      <label class="field-label" for="state-reserve-rate">
+        <span>State and local tax reserve <span class="font-normal text-faint">(optional)</span></span>
+        <span class="input-wrap mt-2 max-w-56">
+          <input id="state-reserve-rate" class="number-input pr-9" type="number" inputmode="decimal" min="0" max="100" step="any" value="" placeholder="Not included" aria-describedby="state-help" />
+          <span class="input-suffix" aria-hidden="true">%</span>
+        </span>
+        <span id="state-help" class="field-help mt-2">Your own percentage of business profit; this is not a state tax calculation.</span>
+      </label>
+
+      <details id="other-income-details" class="details-card">
+        <summary class="details-summary">
+          <span><span class="block font-medium text-ink">Add other income</span><span class="mt-1 block text-xs font-normal text-muted">Optional W-2 wages and other taxable income</span></span>
+          <svg class="details-chevron" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </summary>
+        <div class="details-content space-y-5">
+          <p class="field-help">Add totals from all of your W-2s. Box 1, 3, and 5 serve different purposes in the estimate.</p>
+          <div class="grid gap-3 sm:grid-cols-3">
+            <label class="field-label" for="taxpayer-box1"><span>W-2 Box 1</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box1" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+            <label class="field-label" for="taxpayer-box3"><span>W-2 Box 3</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box3" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+            <label class="field-label" for="taxpayer-box5"><span>W-2 Box 5</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box5" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+          </div>
+          <div id="spouse-wages-fields" class="space-y-3" hidden>
+            <div><h3 class="text-sm font-medium text-ink">Spouse’s W-2 wages</h3><p class="field-help mt-1">For a joint return, add the spouse’s totals from all W-2s.</p></div>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="field-label" for="spouse-box1"><span>Spouse W-2 Box 1</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box1" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="spouse-box5"><span>Spouse W-2 Box 5</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box5" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+            </div>
+          </div>
+          <label class="field-label" for="other-taxable-income"><span>Other annual ordinary taxable income</span><span class="input-wrap mt-2 max-w-72"><span class="input-prefix" aria-hidden="true">$</span><input id="other-taxable-income" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" aria-describedby="other-income-help" /></span><span id="other-income-help" class="field-help mt-2">Exclude W-2 wages, this business’s profit, capital gains, and qualified dividends.</span></label>
+        </div>
+      </details>
+
+      <fieldset id="qbi-fields" class="details-card space-y-4 border-0 p-4" hidden>
+        <legend class="px-1 text-sm font-semibold text-ink">Higher-income QBI details</legend>
+        <p class="field-help">Your estimate enters the 2026 QBI limits. These answers affect whether any QBI deduction is included.</p>
+        <label class="field-label" for="sstb-status"><span>Is this business a specified-service trade or business?</span><select id="sstb-status" class="select-input mt-2"><option value="unsure" selected>Not sure</option><option value="no">No</option><option value="yes">Yes</option></select><span class="field-help mt-2">Examples can include consulting, performing arts, and some income tied to your name or identity. The rules are specific.</span></label>
+        <label class="field-label" for="qualified-property-ubia"><span>Qualified property basis (UBIA)</span><span class="input-wrap mt-2 max-w-72"><span class="input-prefix" aria-hidden="true">$</span><input id="qualified-property-ubia" class="number-input pl-8" type="number" min="0" step="any" value="" inputmode="decimal" placeholder="Enter 0 if none" aria-describedby="ubia-help" /></span><span id="ubia-help" class="field-help mt-2">Use original basis of eligible tangible depreciable property still in its depreciable period, not current market value.</span></label>
+      </fieldset>
+    </form>
+  </div>
+
+  <section id="estimate-results" class="panel overflow-hidden lg:sticky lg:top-5" aria-labelledby="results-heading">
+    <div class="border-b border-line p-5 sm:p-7">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="eyebrow">Your estimate</p>
+          <h2 id="results-heading" class="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">Estimated take-home</h2>
+        </div>
+        <button id="theme-toggle" class="icon-button" type="button" aria-label="Switch to dark theme" aria-pressed="false">
+          <svg id="theme-sun-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3.6" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2m0 15v2m9.5-9.5h-2m-15 0h-2m16.22-6.72-1.42 1.42M6.7 17.3l-1.42 1.42m13.44 0-1.42-1.42M6.7 6.7 5.28 5.28" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <svg id="theme-moon-icon" class="hidden" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.2 15.1A8.2 8.2 0 0 1 8.9 3.8 8.3 8.3 0 1 0 20.2 15.1Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <p class="mt-1 text-sm text-muted">After expenses and the taxes included below</p>
+
+      <div id="profit-results" class="mt-6">
+        <div class="result-hero">
+          <div>
+            <p class="text-xs font-medium uppercase tracking-[0.12em] text-muted">Annual take-home</p>
+            <p id="take-home-annual" class="mt-2 text-4xl font-semibold tracking-[-0.04em] text-ink sm:text-5xl">—</p>
+          </div>
+          <div class="mt-5 flex items-end justify-between gap-4 border-t border-line/70 pt-4">
+            <div><p class="text-xs font-medium uppercase tracking-[0.12em] text-muted">Monthly average</p><p id="take-home-monthly" class="mt-1 text-lg font-semibold text-ink">—</p></div>
+            <div class="text-right"><p class="text-xs font-medium uppercase tracking-[0.12em] text-muted">Business profit</p><p id="business-profit" class="mt-1 text-sm font-semibold text-ink">—</p></div>
+          </div>
+        </div>
+
+        <div class="mt-5 flex flex-col gap-3 rounded-xl border border-accent/20 bg-accent-soft p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div><p class="text-sm font-semibold text-ink">Suggested tax reserve</p><p id="reserve-recommendation" class="mt-1 text-sm text-muted" aria-live="polite">—</p></div>
+          <label class="field-label w-full sm:max-w-36" for="invoice-amount"><span class="text-xs text-muted">Invoice amount</span><span class="input-wrap mt-1"><span class="input-prefix" aria-hidden="true">$</span><input id="invoice-amount" class="number-input pl-8" type="number" min="0" step="any" value="1000" inputmode="decimal" /></span></label>
+          <p class="invoice-reserve"><span id="invoice-reserve-amount">—</span><span class="mt-0.5 block text-[11px] font-medium uppercase tracking-wide text-muted">to reserve</span></p>
+        </div>
+
+        <div class="mt-6">
+          <div class="mb-3 flex items-center justify-between gap-3"><h3 class="text-sm font-semibold text-ink">Where revenue goes</h3><span class="text-xs text-muted">Annual</span></div>
+          <div id="breakdown-bar" class="breakdown-bar" role="img" aria-label="Revenue breakdown"></div>
+          <ul class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted sm:grid-cols-4">
+            <li class="legend-item"><span class="legend-dot bg-expenses"></span><span>Expenses</span><strong id="breakdown-expenses" class="text-ink">—</strong></li>
+            <li class="legend-item"><span class="legend-dot bg-taxes"></span><span>Taxes</span><strong id="breakdown-taxes" class="text-ink">—</strong></li>
+            <li class="legend-item"><span class="legend-dot bg-net"></span><span>Take-home</span><strong id="breakdown-net" class="text-ink">—</strong></li>
+            <li id="breakdown-gap-row" class="legend-item col-span-2 sm:col-span-1" hidden><span class="legend-dot bg-gap"></span><span>Cash gap</span><strong id="breakdown-gap" class="text-ink">—</strong></li>
+          </ul>
+        </div>
+
+        <div class="mt-6 divide-y divide-line border-y border-line text-sm">
+          <div class="tax-row"><span>Federal income tax on business</span><strong id="federal-tax-amount">—</strong></div>
+          <div class="tax-row"><span>Self-employment tax</span><strong id="se-tax-amount">—</strong></div>
+          <div class="tax-row"><span>Additional Medicare tax</span><strong id="additional-medicare-amount">—</strong></div>
+          <div class="tax-row"><span id="state-tax-label">State/local reserve</span><strong id="state-tax-amount">—</strong></div>
+          <div class="tax-row font-semibold text-ink"><span>Total estimated taxes</span><strong id="total-tax-amount">—</strong></div>
+        </div>
+        <p id="state-result-note" class="mt-3 text-xs leading-5 text-muted" aria-live="polite"></p>
+        <p id="qbi-result-note" class="mt-2 text-xs leading-5 text-muted"></p>
+        <p id="profit-status-note" class="sr-only" aria-live="polite"></p>
+      </div>
+
+      <div id="break-even-results" class="mt-6 rounded-xl border border-line bg-surface-muted p-5" hidden>
+        <p class="text-xs font-medium uppercase tracking-[0.12em] text-muted">Break-even</p>
+        <p class="mt-2 text-3xl font-semibold tracking-tight text-ink">$0 estimated take-home</p>
+        <p class="mt-2 text-sm leading-6 text-muted">Revenue is fully used by expenses. Estimated business tax reserve and take-home are both $0 at break-even.</p>
+      </div>
+
+      <div id="loss-results" class="mt-6 rounded-xl border border-loss/25 bg-loss-soft p-5" hidden>
+        <p class="text-xs font-medium uppercase tracking-[0.12em] text-loss">Cash deficit</p>
+        <p id="loss-amount" class="mt-2 text-3xl font-semibold tracking-tight text-ink">—</p>
+        <p class="mt-2 text-sm leading-6 text-muted">Expenses exceed receipts. This estimate doesn’t calculate a tax benefit or take-home pay for a business loss.</p>
+      </div>
+
+      <div class="mt-5 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <p class="max-w-md text-xs leading-5 text-muted">Planning estimate only. It assumes the standard deduction and excludes many household tax rules.</p>
+        <button id="copy-summary" class="button-secondary shrink-0" type="button">
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="7" y="6" width="9" height="11" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M13 6V4.8A1.8 1.8 0 0 0 11.2 3H5.8A1.8 1.8 0 0 0 4 4.8v7.4A1.8 1.8 0 0 0 5.8 14H7" stroke="currentColor" stroke-width="1.4"/></svg>
+          Copy calculation summary
+        </button>
+      </div>
+      <p id="copy-status" class="mt-2 min-h-5 text-right text-xs text-muted" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+</section>
+
+<script>
+  import '../scripts/calculator';
+</script>

@@ -1,0 +1,23 @@
+{
+  "name": "setaside",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A private, client-side tax and take-home estimator for U.S. freelancers and creators.",
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.0",
+    "astro": "^7.4.5",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^5.9.3"
+  }
+}

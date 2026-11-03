@@ -1,0 +1,6 @@
+# Cloudflare Pages preview hosts. The custom production domain is not matched.
+https://:project.pages.dev/*
+  X-Robots-Tag: noindex
+
+https://:version.:project.pages.dev/*
+  X-Robots-Tag: noindex
