@@ -1,4 +1,4 @@
-import { TAX_YEAR_2026 } from './data/2026';
+import { ACTIVE_TAX_YEAR } from './activeYear';
 import { calculateFederalIncomeTax } from './federal';
 import { calculateQbiDeduction } from './qbi';
 import { calculateSelfEmploymentTax } from './selfEmployment';
@@ -61,7 +61,7 @@ export function estimateTax(input: EstimateInput): EstimateResult {
     taxpayerW2,
     spouseW2,
   });
-  const standardDeduction = TAX_YEAR_2026.standardDeduction[input.filingStatus];
+  const standardDeduction = ACTIVE_TAX_YEAR.standardDeduction[input.filingStatus];
   const householdIncomeWithoutBusiness = otherTaxableIncome + taxpayerW2.box1 + spouseW2.box1;
   const taxableIncomeWithoutBusiness = Math.max(
     0,
@@ -120,7 +120,7 @@ export function estimateTax(input: EstimateInput): EstimateResult {
     reserveRate,
     reservePercent,
     qbiTreatment,
-    qbiThreshold: TAX_YEAR_2026.qbi.threshold[input.filingStatus].threshold,
+    qbiThreshold: ACTIVE_TAX_YEAR.qbi.threshold[input.filingStatus].threshold,
     taxableIncomeBeforeQbi,
   };
 

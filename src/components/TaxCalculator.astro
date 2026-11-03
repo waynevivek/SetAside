@@ -1,4 +1,5 @@
 ---
+import { ACTIVE_TAX_YEAR } from '../lib/tax/activeYear';
 import { STATES } from '../lib/tax/states';
 ---
 
@@ -10,7 +11,7 @@ import { STATES } from '../lib/tax/states';
         <h2 class="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">Build your estimate</h2>
         <p class="mt-2 max-w-lg text-sm leading-6 text-muted">Use your expected annual business receipts before expenses. Your entries stay in this tab.</p>
       </div>
-      <span class="year-chip">2026 tax year</span>
+      <span class="year-chip">{ACTIVE_TAX_YEAR.year} tax year</span>
     </div>
 
     <form id="tax-form" class="space-y-7" autocomplete="off" novalidate>
@@ -126,7 +127,7 @@ import { STATES } from '../lib/tax/states';
 
       <fieldset id="qbi-fields" class="details-card space-y-4 border-0 p-4" hidden>
         <legend class="px-1 text-sm font-semibold text-ink">Higher-income QBI details</legend>
-        <p class="field-help">Your estimate enters the 2026 QBI limits. These answers affect whether any QBI deduction is included.</p>
+        <p class="field-help">Your estimate enters the {ACTIVE_TAX_YEAR.year} QBI limits. These answers affect whether any QBI deduction is included.</p>
         <label class="field-label" for="sstb-status"><span>Is this business a specified-service trade or business?</span><select id="sstb-status" class="select-input mt-2"><option value="unsure" selected>Not sure</option><option value="no">No</option><option value="yes">Yes</option></select><span class="field-help mt-2">Examples can include consulting, performing arts, and some income tied to your name or identity. The rules are specific.</span></label>
         <label class="field-label" for="qualified-property-ubia"><span>Qualified property basis (UBIA)</span><span class="input-wrap mt-2 max-w-72"><span class="input-prefix" aria-hidden="true">$</span><input id="qualified-property-ubia" class="number-input pl-8" type="number" min="0" step="any" value="" inputmode="decimal" placeholder="Enter 0 if none" aria-describedby="ubia-help" /></span><span id="ubia-help" class="field-help mt-2">Use original basis of eligible tangible depreciable property still in its depreciable period, not current market value.</span></label>
       </fieldset>

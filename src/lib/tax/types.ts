@@ -50,8 +50,15 @@ export interface QbiThresholds {
   phaseInRange: number;
 }
 
+export interface TaxYearSource {
+  title: string;
+  url: string;
+}
+
 export interface TaxYearData {
   year: number;
+  verifiedOn: string;
+  sources: readonly TaxYearSource[];
   standardDeduction: Record<FilingStatus, number>;
   ordinaryBrackets: Record<FilingStatus, readonly TaxBracket[]>;
   socialSecurityWageBase: number;

@@ -1,4 +1,4 @@
-import { TAX_YEAR_2026 } from './data/2026';
+import { ACTIVE_TAX_YEAR } from './activeYear';
 import type { FilingStatus } from './types';
 
 export function calculateFederalIncomeTax(
@@ -6,7 +6,7 @@ export function calculateFederalIncomeTax(
   filingStatus: FilingStatus,
 ): number {
   const income = Math.max(0, taxableIncome);
-  const brackets = TAX_YEAR_2026.ordinaryBrackets[filingStatus];
+  const brackets = ACTIVE_TAX_YEAR.ordinaryBrackets[filingStatus];
   let lowerBound = 0;
   let tax = 0;
 

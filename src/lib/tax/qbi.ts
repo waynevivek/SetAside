@@ -1,4 +1,4 @@
-import { TAX_YEAR_2026 } from './data/2026';
+import { ACTIVE_TAX_YEAR } from './activeYear';
 import type { FilingStatus, QbiHighIncomeDetails, QbiTreatment } from './types';
 
 export interface QbiInput {
@@ -19,12 +19,12 @@ export function calculateQbiDeduction(input: QbiInput): QbiTreatment {
     };
   }
 
-  const thresholds = TAX_YEAR_2026.qbi.threshold[input.filingStatus];
+  const thresholds = ACTIVE_TAX_YEAR.qbi.threshold[input.filingStatus];
   const taxableIncome = Math.max(0, input.taxableIncomeBeforeQbi);
-  const limit = Math.max(0, taxableIncome) * TAX_YEAR_2026.qbi.deductionRate;
+  const limit = Math.max(0, taxableIncome) * ACTIVE_TAX_YEAR.qbi.deductionRate;
   let eligibleQbi = qbi;
   let eligibleUbia = 0;
-  let minimumApplies = qbi >= TAX_YEAR_2026.qbi.minimumQbi;
+  let minimumApplies = qbi >= ACTIVE_TAX_YEAR.qbi.minimumQbi;
 
   if (taxableIncome > thresholds.threshold) {
     const details = input.highIncomeDetails;
@@ -50,17 +50,17 @@ export function calculateQbiDeduction(input: QbiInput): QbiTreatment {
         return {
           status: 'notEligible',
           deduction: 0,
-          reason: 'This specified-service business is outside the 2026 QBI income range.',
+          reason: `This specified-service business is outside the ${ACTIVE_TAX_YEAR.year} QBI income range.`,
         };
       }
 
       eligibleQbi *= eligiblePercentage;
       eligibleUbia *= eligiblePercentage;
-      minimumApplies = eligibleQbi >= TAX_YEAR_2026.qbi.minimumQbi;
+      minimumApplies = eligibleQbi >= ACTIVE_TAX_YEAR.qbi.minimumQbi;
     }
   }
 
-  const basicQbiComponent = eligibleQbi * TAX_YEAR_2026.qbi.deductionRate;
+  const basicQbiComponent = eligibleQbi * ACTIVE_TAX_YEAR.qbi.deductionRate;
   const wageAndPropertyLimit = eligibleUbia * 0.025;
   const phaseIn = taxableIncome > thresholds.threshold
     ? Math.min(1, (taxableIncome - thresholds.threshold) / thresholds.phaseInRange)
@@ -68,12 +68,12 @@ export function calculateQbiDeduction(input: QbiInput): QbiTreatment {
   const phasedReduction = Math.max(0, basicQbiComponent - wageAndPropertyLimit) * phaseIn;
   const qbiComponent = Math.max(0, basicQbiComponent - phasedReduction);
   const limitedDeduction = Math.min(qbiComponent, limit);
-  const minimumDeduction = minimumApplies ? TAX_YEAR_2026.qbi.minimumDeduction : 0;
+  const minimumDeduction = minimumApplies ? ACTIVE_TAX_YEAR.qbi.minimumDeduction : 0;
   const deduction = Math.max(limitedDeduction, minimumDeduction);
 
   return {
     status: 'included',
     deduction,
-    reason: 'Assumes one eligible U.S. sole-proprietor business and material participation for the active QBI minimum; no employee wages, prior-year QBI losses, or other QBI items are modeled.',
+    reason: 'Assumes one eligible U.S. sole-proprietor business; no employee wages, prior-year QBI losses, or other QBI items are modeled.',
   };
 }

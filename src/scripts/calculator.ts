@@ -1,3 +1,4 @@
+import { ACTIVE_TAX_YEAR } from '../lib/tax/activeYear';
 import { estimateTax } from '../lib/tax/estimate';
 import { hasNoIndividualIncomeTax, isStateCode } from '../lib/tax/states';
 import type { StateCode } from '../lib/tax/states';
@@ -337,7 +338,7 @@ function buildCalculationSummary(
 ): string {
   const input = normalizeCalculatorForm(state);
   const lines = [
-    'SetAside · 2026 tax estimate',
+    `SetAside · ${ACTIVE_TAX_YEAR.year} tax estimate`,
     `Filing status: ${getFilingStatusLabel(state.filingStatus)}`,
     `Gross receipts: ${formatCurrency(input.grossReceipts)}`,
     `Business expenses: ${formatCurrency(input.businessExpenses)}`,
@@ -363,7 +364,7 @@ function buildCalculationSummary(
 
   const stateName = state.stateCode === null ? 'not selected' : state.stateCode;
   lines.push(`State: ${stateName}`);
-  lines.push('Assumptions: 2026 federal rules; one U.S. sole-proprietor business; standard deduction; no credits, itemized deductions, or estimated payments. State tax is included only if a reserve rate was entered.');
+  lines.push(`Assumptions: ${ACTIVE_TAX_YEAR.year} federal rules; one U.S. sole-proprietor business; standard deduction; no credits, itemized deductions, or estimated payments. State tax is included only if a reserve rate was entered.`);
   lines.push('Planning estimate only. Not tax advice or a tax return.');
 
   return lines.join('\n');
