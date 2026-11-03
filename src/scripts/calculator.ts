@@ -1,3 +1,4 @@
+import { ACTIVE_TAX_YEAR } from '../lib/tax/activeYear';
 import { estimateTax } from '../lib/tax/estimate';
 import { hasNoIndividualIncomeTax, isStateCode } from '../lib/tax/states';
 import type { StateCode } from '../lib/tax/states';
@@ -6,9 +7,12 @@ import type {
   EstimateInput,
   EstimateResult,
   FilingStatus,
+  HouseholdFederalEstimate,
   QbiHighIncomeDetails,
+  SpouseW2Details,
   SstbAnswer,
   StateTaxTreatment,
+  TaxpayerW2Details,
 } from '../lib/tax/types';
 
 type RevenuePeriod = 'annual' | 'monthly';
@@ -22,9 +26,9 @@ interface CalculatorFormState {
   filingStatus: FilingStatus;
   stateCode: StateCode | null;
   stateReserveRate: number | null;
-  otherTaxableIncome: number;
-  taxpayerW2: { box1: number; box3: number; box5: number };
-  spouseW2: { box1: number; box5: number };
+  estimatedFederalPayments: number;
+  taxpayerW2: TaxpayerW2Details;
+  spouseW2: SpouseW2Details;
   qbiHighIncomeDetails: QbiHighIncomeDetails;
   invoiceAmount: number;
 }
@@ -48,7 +52,7 @@ function requiredSelect(id: string): HTMLSelectElement {
 }
 
 function readNumber(input: HTMLInputElement): number {
-  const value = input.value.trim();
+  const value = input.value.trim().replaceAll(',', '');
 
   if (value === '') {
     return 0;
@@ -56,6 +60,13 @@ function readNumber(input: HTMLInputElement): number {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+}
+
+function formatGroupedNumber(value: string): string {
+  const [integerPart, fractionalPart] = value.replaceAll(',', '').split('.');
+  const groupedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  return fractionalPart === undefined ? groupedInteger : `${groupedInteger}.${fractionalPart}`;
 }
 
 function readOptionalRate(input: HTMLInputElement): number | null {
@@ -103,15 +114,21 @@ function readCalculatorFormState(): CalculatorFormState {
     filingStatus: parseFilingStatus(requiredSelect('filing-status').value),
     stateCode: isStateCode(stateValue) ? stateValue : null,
     stateReserveRate: readOptionalRate(requiredInput('state-reserve-rate')),
-    otherTaxableIncome: readNumber(requiredInput('other-taxable-income')),
+    estimatedFederalPayments: readNumber(requiredInput('estimated-federal-payments')),
     taxpayerW2: {
       box1: readNumber(requiredInput('taxpayer-box1')),
+      box2: readNumber(requiredInput('taxpayer-box2')),
       box3: readNumber(requiredInput('taxpayer-box3')),
+      box4: readNumber(requiredInput('taxpayer-box4')),
       box5: readNumber(requiredInput('taxpayer-box5')),
+      box6: readNumber(requiredInput('taxpayer-box6')),
     },
     spouseW2: {
       box1: readNumber(requiredInput('spouse-box1')),
+      box2: readNumber(requiredInput('spouse-box2')),
+      box4: readNumber(requiredInput('spouse-box4')),
       box5: readNumber(requiredInput('spouse-box5')),
+      box6: readNumber(requiredInput('spouse-box6')),
     },
     qbiHighIncomeDetails: {
       sstb: parseSstbAnswer(requiredSelect('sstb-status').value),
@@ -133,7 +150,7 @@ function normalizeCalculatorForm(state: CalculatorFormState): EstimateInput {
     filingStatus: state.filingStatus,
     grossReceipts,
     businessExpenses,
-    otherTaxableIncome: state.otherTaxableIncome,
+    estimatedFederalPayments: state.estimatedFederalPayments,
     taxpayerW2: state.taxpayerW2,
     spouseW2: state.spouseW2,
     stateCode: state.stateCode,
@@ -148,13 +165,28 @@ const usd = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 });
 
+const inputUsd = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 2,
+});
+
 const percent = new Intl.NumberFormat('en-US', {
   style: 'percent',
   maximumFractionDigits: 0,
 });
 
+const inputPercent = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  maximumFractionDigits: 2,
+});
+
 function formatCurrency(amount: number): string {
   return usd.format(amount);
+}
+
+function formatInputCurrency(amount: number): string {
+  return inputUsd.format(amount);
 }
 
 function setRangeMaximum(
@@ -211,9 +243,22 @@ function updateSpouseFields(filingStatus: FilingStatus): void {
   requiredElement('spouse-wages-fields', HTMLDivElement).hidden = filingStatus !== 'marriedJoint';
 }
 
-function updateQbiFields(result: EstimateResult): void {
+function updateQbiFields(result: EstimateResult, filingStatus: FilingStatus): void {
   const fields = requiredElement('qbi-fields', HTMLFieldSetElement);
-  fields.hidden = result.kind !== 'profit' || result.taxableIncomeBeforeQbi <= result.qbiThreshold;
+  const isHighIncome = result.kind === 'profit'
+    && result.taxableIncomeBeforeQbi > result.qbiThreshold;
+  fields.hidden = !isHighIncome;
+
+  const propertyField = requiredElement('qualified-property-field', HTMLLabelElement);
+  if (!isHighIncome) {
+    propertyField.hidden = true;
+    return;
+  }
+
+  const thresholds = ACTIVE_TAX_YEAR.qbi.threshold[filingStatus];
+  const sstbFullyPhasedOut = parseSstbAnswer(requiredSelect('sstb-status').value) === 'yes'
+    && result.taxableIncomeBeforeQbi >= thresholds.threshold + thresholds.phaseInRange;
+  propertyField.hidden = sstbFullyPhasedOut;
 }
 
 function setText(id: string, value: string): void {
@@ -226,9 +271,13 @@ function setBreakdown(result: Extract<EstimateResult, { kind: 'profit' }>): void
   const totalShown = hasCashGap
     ? result.businessExpenses + result.totalEstimatedTax
     : result.grossReceipts;
+  const businessFederalTax = result.federalIncomeTax
+    + result.selfEmploymentTax
+    + result.additionalMedicareTax;
   const segments = [
     { id: 'expenses', value: result.businessExpenses, color: 'bg-expenses' },
-    { id: 'taxes', value: result.totalEstimatedTax, color: 'bg-taxes' },
+    { id: 'federal-tax', value: businessFederalTax, color: 'bg-taxes' },
+    { id: 'state-reserve', value: result.stateTax.amount, color: 'bg-state-reserve' },
     { id: 'net', value: Math.max(0, result.takeHomeAnnual), color: 'bg-net' },
   ];
   bar.replaceChildren();
@@ -245,12 +294,16 @@ function setBreakdown(result: Extract<EstimateResult, { kind: 'profit' }>): void
     bar.append(part);
   }
 
+  const stateReserveDescription = result.stateTax.status === 'included'
+    ? `${formatCurrency(result.stateTax.amount)} state/local reserve assumption`
+    : 'no state/local reserve entered';
   const description = hasCashGap
-    ? `Business receipts ${formatCurrency(result.grossReceipts)}. Expenses and included estimated taxes total ${formatCurrency(totalShown)}, exceeding receipts by ${formatCurrency(Math.abs(result.takeHomeAnnual))}.`
-    : `Business receipts of ${formatCurrency(result.grossReceipts)} split into ${formatCurrency(result.businessExpenses)} expenses, ${formatCurrency(result.totalEstimatedTax)} estimated taxes, and ${formatCurrency(result.takeHomeAnnual)} take-home.`;
+    ? `Business receipts ${formatCurrency(result.grossReceipts)}. Expenses, business-attributable federal taxes, and ${stateReserveDescription} total ${formatCurrency(totalShown)}, exceeding receipts by ${formatCurrency(Math.abs(result.takeHomeAnnual))}.`
+    : `Business receipts of ${formatCurrency(result.grossReceipts)} split into ${formatCurrency(result.businessExpenses)} expenses, ${formatCurrency(businessFederalTax)} federal taxes attributable to the business, ${stateReserveDescription}, and ${formatCurrency(result.takeHomeAnnual)} take-home.`;
   bar.setAttribute('aria-label', description);
   setText('breakdown-expenses', formatCurrency(result.businessExpenses));
-  setText('breakdown-taxes', formatCurrency(result.totalEstimatedTax));
+  setText('breakdown-federal-tax', formatCurrency(businessFederalTax));
+  setText('breakdown-state-reserve', formatCurrency(result.stateTax.amount));
   setText('breakdown-net', formatCurrency(result.takeHomeAnnual));
   requiredElement('breakdown-gap-row', HTMLLIElement).hidden = !hasCashGap;
   setText('breakdown-gap', formatCurrency(Math.abs(result.takeHomeAnnual)));
@@ -274,6 +327,53 @@ function getQbiNote(result: Extract<EstimateResult, { kind: 'profit' }>): string
   }
 
   return result.qbiTreatment.reason;
+}
+
+function getFederalBalanceLabel(balance: HouseholdFederalEstimate['balance']): string {
+  if (balance.kind === 'amountDue') {
+    return 'Estimated federal amount due';
+  }
+
+  if (balance.kind === 'estimatedOverpayment') {
+    return 'Estimated overpayment';
+  }
+
+  return 'No remaining federal balance';
+}
+
+function getFederalBalanceNote(balance: HouseholdFederalEstimate['balance']): string {
+  if (balance.kind === 'estimatedOverpayment') {
+    return 'This is an estimated overpayment, not a promised refund. An actual refund depends on your complete tax return and other adjustments.';
+  }
+
+  if (balance.kind === 'amountDue') {
+    return 'After W-2 federal income tax withholding, eligible wage-tax credits, and estimated federal payments.';
+  }
+
+  return 'W-2 withholding, eligible wage-tax credits, and estimated payments match the modeled liability.';
+}
+
+function renderHouseholdFederal(estimate: HouseholdFederalEstimate): void {
+  setText('household-federal-liability', formatCurrency(estimate.liability));
+  setText(
+    'household-federal-withholding',
+    formatCurrency(estimate.payments.federalIncomeTaxWithholding),
+  );
+  setText(
+    'household-estimated-payments',
+    formatCurrency(estimate.payments.estimatedFederalPayments),
+  );
+  setText(
+    'household-excess-social-security',
+    formatCurrency(estimate.payments.excessSocialSecurityWithholding),
+  );
+  setText(
+    'household-additional-medicare-withholding',
+    formatCurrency(estimate.payments.additionalMedicareTaxWithholding),
+  );
+  setText('household-federal-balance-label', getFederalBalanceLabel(estimate.balance));
+  setText('household-federal-balance', formatCurrency(estimate.balance.amount));
+  setText('household-federal-balance-note', getFederalBalanceNote(estimate.balance));
 }
 
 function renderProfit(result: Extract<EstimateResult, { kind: 'profit' }>, invoiceAmount: number): void {
@@ -304,6 +404,7 @@ function renderResult(result: EstimateResult, invoiceAmount: number): void {
   profitResults.hidden = result.kind !== 'profit';
   breakEvenResults.hidden = result.kind !== 'breakEven';
   lossResults.hidden = result.kind !== 'loss';
+  renderHouseholdFederal(result.householdFederal);
 
   if (result.kind === 'profit') {
     renderProfit(result, invoiceAmount);
@@ -312,10 +413,19 @@ function renderResult(result: EstimateResult, invoiceAmount: number): void {
 
   if (result.kind === 'loss') {
     setText('loss-amount', formatCurrency(result.cashDeficit));
-    setText('profit-status-note', `Business loss of ${formatCurrency(result.businessLoss)}. Tax and take-home estimate unavailable.`);
+    setText('profit-status-note', `Business loss of ${formatCurrency(result.businessLoss)}. The household federal estimate below does not apply the loss.`);
     return;
   }
 
+  setText('break-even-business-profit', formatCurrency(result.businessProfit));
+  setText('break-even-take-home-annual', formatCurrency(result.takeHomeAnnual));
+  setText('break-even-take-home-monthly', formatCurrency(result.takeHomeMonthly));
+  setText('break-even-reserve-rate', percent.format(result.reserveRate));
+  setText(
+    'break-even-invoice-reserve',
+    formatCurrency(Math.ceil(invoiceAmount * result.reservePercent / 100)),
+  );
+  setText('break-even-invoice-context', `for a ${formatCurrency(invoiceAmount)} invoice`);
   setText('profit-status-note', 'Break-even. No positive business profit is available for a tax reserve or take-home estimate.');
 }
 
@@ -336,37 +446,94 @@ function buildCalculationSummary(
   result: EstimateResult,
 ): string {
   const input = normalizeCalculatorForm(state);
+  const receiptsInput = state.revenuePeriod === 'monthly'
+    ? `Average monthly gross receipts entered: ${formatInputCurrency(state.grossRevenue)}`
+    : `Annual gross receipts entered: ${formatInputCurrency(state.grossRevenue)}`;
+  const expensesInput = state.expenseMode === 'percent'
+    ? `Business expenses entered: ${inputPercent.format(state.expenseValue / 100)} of receipts (${formatInputCurrency(input.businessExpenses)} annual)`
+    : `Annual business expenses entered: ${formatInputCurrency(state.expenseValue)}`;
+  const stateName = state.stateCode === null ? 'not selected' : state.stateCode;
+  const stateReserveInput = state.stateReserveRate === null
+    ? 'not entered'
+    : `${inputPercent.format(state.stateReserveRate)} (user assumption)`;
   const lines = [
-    'SetAside · 2026 tax estimate',
+    `SetAside · ${ACTIVE_TAX_YEAR.year} tax estimate`,
+    'Scenario inputs',
     `Filing status: ${getFilingStatusLabel(state.filingStatus)}`,
-    `Gross receipts: ${formatCurrency(input.grossReceipts)}`,
-    `Business expenses: ${formatCurrency(input.businessExpenses)}`,
+    receiptsInput,
+    `Annualized gross receipts used: ${formatInputCurrency(input.grossReceipts)}`,
+    expensesInput,
+    formatW2Inputs('Taxpayer W-2 totals', state.taxpayerW2),
+    ...(state.filingStatus === 'marriedJoint'
+      ? [formatW2Inputs('Spouse W-2 totals', state.spouseW2)]
+      : []),
+    `Estimated federal payments entered: ${formatInputCurrency(state.estimatedFederalPayments)}`,
+    `State: ${stateName}`,
+    `State/local reserve input: ${stateReserveInput}`,
+    `Invoice amount: ${formatInputCurrency(state.invoiceAmount)}`,
+    ...(result.kind === 'profit' && result.taxableIncomeBeforeQbi > result.qbiThreshold
+      ? [`High-income QBI inputs: specified-service trade ${state.qbiHighIncomeDetails.sstb}; qualified property basis ${state.qbiHighIncomeDetails.qualifiedPropertyUbia === null ? 'not entered' : formatInputCurrency(state.qbiHighIncomeDetails.qualifiedPropertyUbia)}`]
+      : []),
+    'Household federal estimate',
+    `Household federal liability before payments: ${formatCurrency(result.householdFederal.liability)}`,
+    `W-2 federal income tax withheld: ${formatCurrency(result.householdFederal.payments.federalIncomeTaxWithholding)}`,
+    `Estimated federal payments: ${formatCurrency(result.householdFederal.payments.estimatedFederalPayments)}`,
+    `Eligible excess Social Security withholding: ${formatCurrency(result.householdFederal.payments.excessSocialSecurityWithholding)}`,
+    `Additional Medicare Tax withheld: ${formatCurrency(result.householdFederal.payments.additionalMedicareTaxWithholding)}`,
+    `Total modeled federal payments: ${formatCurrency(result.householdFederal.payments.total)}`,
+    `${getFederalBalanceLabel(result.householdFederal.balance)}: ${formatCurrency(result.householdFederal.balance.amount)}`,
   ];
 
   if (result.kind === 'loss') {
+    lines.push('Business result');
     lines.push(`Business loss / cash deficit: ${formatCurrency(result.cashDeficit)}`);
-    lines.push('Tax and take-home estimates are unavailable for a business loss.');
+    lines.push('The loss is not applied to federal taxable income. The W-2-based household estimate may be higher than actual liability if the loss is deductible; business take-home and reserve are not calculated.');
   } else if (result.kind === 'breakEven') {
-    lines.push('Business profit: $0');
-    lines.push('Estimated taxes and take-home: $0 at break-even.');
+    lines.push('Business result');
+    lines.push(`Annual business profit: ${formatCurrency(result.businessProfit)}`);
+    lines.push(`Annual business take-home: ${formatCurrency(result.takeHomeAnnual)}`);
+    lines.push(`Monthly business take-home: ${formatCurrency(result.takeHomeMonthly)}`);
+    lines.push(`Business tax and reserve: ${formatCurrency(result.totalEstimatedTax)}`);
+    lines.push(`Invoice reserve rate: ${result.reservePercent}%`);
+    lines.push(`Reserve for a ${formatInputCurrency(state.invoiceAmount)} invoice: ${formatCurrency(Math.ceil(state.invoiceAmount * result.reservePercent / 100))}`);
   } else {
+    lines.push('Business result');
+    lines.push(`Annual business profit: ${formatCurrency(result.businessProfit)}`);
     lines.push(`Federal income tax on business: ${formatCurrency(result.federalIncomeTax)}`);
     lines.push(`Self-employment tax: ${formatCurrency(result.selfEmploymentTax)}`);
     lines.push(`Additional Medicare tax: ${formatCurrency(result.additionalMedicareTax)}`);
-    lines.push(`State/local reserve: ${result.stateTax.status === 'included' ? formatCurrency(result.stateTax.amount) : 'not included'}`);
+    lines.push(`State/local reserve assumption: ${result.stateTax.status === 'included' ? formatCurrency(result.stateTax.amount) : 'not included'}`);
+    lines.push(`Total business tax and reserve: ${formatCurrency(result.totalEstimatedTax)}`);
     lines.push(`Estimated annual take-home: ${formatCurrency(result.takeHomeAnnual)}`);
     lines.push(`Estimated monthly take-home: ${formatCurrency(result.takeHomeMonthly)}`);
-    lines.push(`Suggested reserve: ${result.reservePercent}% of each invoice`);
-    lines.push(`Reserve for a ${formatCurrency(state.invoiceAmount)} invoice: ${formatCurrency(Math.ceil(state.invoiceAmount * result.reservePercent / 100))}`);
+    lines.push(`Suggested invoice reserve rate: ${result.reservePercent}%`);
+    lines.push(`Reserve for a ${formatInputCurrency(state.invoiceAmount)} invoice: ${formatCurrency(Math.ceil(state.invoiceAmount * result.reservePercent / 100))}`);
     lines.push(`QBI: ${result.qbiTreatment.status === 'included' ? `${formatCurrency(result.qbiTreatment.deduction)} deduction` : result.qbiTreatment.reason}`);
   }
 
-  const stateName = state.stateCode === null ? 'not selected' : state.stateCode;
-  lines.push(`State: ${stateName}`);
-  lines.push('Assumptions: 2026 federal rules; one U.S. sole-proprietor business; standard deduction; no credits, itemized deductions, or estimated payments. State tax is included only if a reserve rate was entered.');
+  lines.push(`Assumptions and limits: ${ACTIVE_TAX_YEAR.year} federal rules; one U.S. sole-proprietor business; standard deduction; excludes itemized deductions and other tax credits; state/local reserve is a user input, not a calculated state tax; business losses are not applied to federal income.`);
   lines.push('Planning estimate only. Not tax advice or a tax return.');
 
   return lines.join('\n');
+}
+
+function formatW2Inputs(label: string, w2: TaxpayerW2Details | SpouseW2Details): string {
+  const boxes = [
+    `Box 1 ${formatInputCurrency(w2.box1)}`,
+    `Box 2 ${formatInputCurrency(w2.box2)}`,
+  ];
+
+  if ('box3' in w2) {
+    boxes.push(`Box 3 ${formatInputCurrency(w2.box3)}`);
+  }
+
+  boxes.push(
+    `Box 4 ${formatInputCurrency(w2.box4)}`,
+    `Box 5 ${formatInputCurrency(w2.box5)}`,
+    `Box 6 ${formatInputCurrency(w2.box6)}`,
+  );
+
+  return `${label}: ${boxes.join(', ')}`;
 }
 
 function updateThemeButton(theme: 'dark' | 'light'): void {
@@ -424,13 +591,22 @@ function initializeCalculator(): void {
     latestFormState = readCalculatorFormState();
     latestResult = estimateTax(normalizeCalculatorForm(latestFormState));
     updateSpouseFields(latestFormState.filingStatus);
-    updateQbiFields(latestResult);
+    updateQbiFields(latestResult, latestFormState.filingStatus);
     renderResult(latestResult, latestFormState.invoiceAmount);
     setText('copy-status', '');
   };
 
+  revenueInput.addEventListener('blur', () => {
+    const value = revenueInput.value.trim().replaceAll(',', '');
+    const amount = Number(value);
+
+    if (value !== '' && Number.isFinite(amount) && amount >= 0) {
+      revenueInput.value = formatGroupedNumber(value);
+    }
+  });
+
   revenueRange.addEventListener('input', () => {
-    revenueInput.value = revenueRange.value;
+    revenueInput.value = formatGroupedNumber(revenueRange.value);
   });
   expensePercentRange.addEventListener('input', () => {
     expensePercentInput.value = expensePercentRange.value;
@@ -453,7 +629,7 @@ function initializeCalculator(): void {
 
       const currentValue = readNumber(revenueInput);
       const convertedValue = nextPeriod === 'monthly' ? currentValue / 12 : currentValue * 12;
-      revenueInput.value = String(Number(convertedValue.toFixed(2)));
+      revenueInput.value = formatGroupedNumber(String(Number(convertedValue.toFixed(2))));
 
       for (const periodButton of document.querySelectorAll<HTMLButtonElement>('[data-revenue-period]')) {
         const selected = periodButton === button;

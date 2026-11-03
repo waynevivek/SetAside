@@ -1,4 +1,5 @@
 ---
+import { ACTIVE_TAX_YEAR } from '../lib/tax/activeYear';
 import { STATES } from '../lib/tax/states';
 ---
 
@@ -10,7 +11,7 @@ import { STATES } from '../lib/tax/states';
         <h2 class="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">Build your estimate</h2>
         <p class="mt-2 max-w-lg text-sm leading-6 text-muted">Use your expected annual business receipts before expenses. Your entries stay in this tab.</p>
       </div>
-      <span class="year-chip">2026 tax year</span>
+      <span class="year-chip">{ACTIVE_TAX_YEAR.year} tax year</span>
     </div>
 
     <form id="tax-form" class="space-y-7" autocomplete="off" novalidate>
@@ -21,7 +22,7 @@ import { STATES } from '../lib/tax/states';
             <span id="revenue-label">Annual gross revenue</span>
             <span class="input-wrap mt-2">
               <span class="input-prefix" aria-hidden="true">$</span>
-              <input id="gross-revenue-number" class="number-input pl-8" type="number" inputmode="decimal" min="0" step="any" value="60000" aria-describedby="revenue-help" />
+              <input id="gross-revenue-number" class="number-input pl-8" type="text" inputmode="decimal" value="60,000" aria-describedby="revenue-help" />
             </span>
           </label>
           <div class="segmented" role="group" aria-label="Revenue period">
@@ -101,34 +102,43 @@ import { STATES } from '../lib/tax/states';
         <span id="state-help" class="field-help mt-2">Your own percentage of business profit; this is not a state tax calculation.</span>
       </label>
 
-      <details id="other-income-details" class="details-card">
+      <details id="w2-details" class="details-card">
         <summary class="details-summary">
-          <span><span class="block font-medium text-ink">Add other income</span><span class="mt-1 block text-xs font-normal text-muted">Optional W-2 wages and other taxable income</span></span>
+          <span><span class="block font-medium text-ink">Add W-2 wages and payments</span><span class="mt-1 block text-xs font-normal text-muted">Optional household wage details</span></span>
           <svg class="details-chevron" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
         </summary>
         <div class="details-content space-y-5">
-          <p class="field-help">Add totals from all of your W-2s. Box 1, 3, and 5 serve different purposes in the estimate.</p>
-          <div class="grid gap-3 sm:grid-cols-3">
-            <label class="field-label" for="taxpayer-box1"><span>W-2 Box 1</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box1" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
-            <label class="field-label" for="taxpayer-box3"><span>W-2 Box 3</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box3" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
-            <label class="field-label" for="taxpayer-box5"><span>W-2 Box 5</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box5" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
-          </div>
-          <div id="spouse-wages-fields" class="space-y-3" hidden>
-            <div><h3 class="text-sm font-medium text-ink">Spouse’s W-2 wages</h3><p class="field-help mt-1">For a joint return, add the spouse’s totals from all W-2s.</p></div>
-            <div class="grid gap-3 sm:grid-cols-2">
-              <label class="field-label" for="spouse-box1"><span>Spouse W-2 Box 1</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box1" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
-              <label class="field-label" for="spouse-box5"><span>Spouse W-2 Box 5</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box5" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+          <p class="field-help">Enter annual totals across your W-2s. Box 1 is federal wages; Box 2 is federal income tax withheld; Box 3 is Social Security wages; Box 4 is Social Security tax withheld; Box 5 is Medicare wages; and Box 6 is Medicare tax withheld, including any Additional Medicare Tax.</p>
+          <div>
+            <h3 class="text-sm font-medium text-ink">Your W-2 totals</h3>
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+              <label class="field-label" for="taxpayer-box1"><span>Box 1 · Federal wages</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box1" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="taxpayer-box2"><span>Box 2 · Federal tax withheld</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box2" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="taxpayer-box3"><span>Box 3 · Social Security wages</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box3" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="taxpayer-box4"><span>Box 4 · Social Security tax withheld</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box4" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" aria-describedby="taxpayer-box4-help" /></span><span id="taxpayer-box4-help" class="field-help mt-1">A credit generally applies only when multiple employers withheld more than the annual maximum.</span></label>
+              <label class="field-label" for="taxpayer-box5"><span>Box 5 · Medicare wages</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box5" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="taxpayer-box6"><span>Box 6 · Medicare tax withheld</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box6" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" aria-describedby="taxpayer-box6-help" /></span><span id="taxpayer-box6-help" class="field-help mt-1">Includes regular Medicare withholding; only the eligible Additional Medicare amount is credited.</span></label>
             </div>
           </div>
-          <label class="field-label" for="other-taxable-income"><span>Other annual ordinary taxable income</span><span class="input-wrap mt-2 max-w-72"><span class="input-prefix" aria-hidden="true">$</span><input id="other-taxable-income" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" aria-describedby="other-income-help" /></span><span id="other-income-help" class="field-help mt-2">Exclude W-2 wages, this business’s profit, capital gains, and qualified dividends.</span></label>
+          <div id="spouse-wages-fields" class="space-y-3" hidden>
+            <div><h3 class="text-sm font-medium text-ink">Spouse’s W-2 totals</h3><p class="field-help mt-1">For a joint return, enter the spouse’s Boxes 1, 2, 4, 5, and 6. Spouse Box 3 does not reduce your self-employment Social Security wage base.</p></div>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="field-label" for="spouse-box1"><span>Box 1 · Federal wages</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box1" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="spouse-box2"><span>Box 2 · Federal tax withheld</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box2" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="spouse-box4"><span>Box 4 · Social Security tax withheld</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box4" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" aria-describedby="spouse-box4-help" /></span><span id="spouse-box4-help" class="field-help mt-1">A credit generally applies only when multiple employers withheld more than the annual maximum.</span></label>
+              <label class="field-label" for="spouse-box5"><span>Box 5 · Medicare wages</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box5" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+              <label class="field-label" for="spouse-box6"><span>Box 6 · Medicare tax withheld</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box6" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
+            </div>
+          </div>
+          <label class="field-label" for="estimated-federal-payments"><span>Estimated federal tax payments <span class="font-normal text-faint">(optional)</span></span><span class="input-wrap mt-2 max-w-72"><span class="input-prefix" aria-hidden="true">$</span><input id="estimated-federal-payments" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" aria-describedby="estimated-payments-help" /></span><span id="estimated-payments-help" class="field-help mt-2">Total payments made or planned for the {ACTIVE_TAX_YEAR.year} tax year, separate from W-2 withholding. Blank and zero are accepted.</span></label>
         </div>
       </details>
 
       <fieldset id="qbi-fields" class="details-card space-y-4 border-0 p-4" hidden>
         <legend class="px-1 text-sm font-semibold text-ink">Higher-income QBI details</legend>
-        <p class="field-help">Your estimate enters the 2026 QBI limits. These answers affect whether any QBI deduction is included.</p>
+        <p class="field-help">Your estimate enters the {ACTIVE_TAX_YEAR.year} QBI limits. These answers affect whether any QBI deduction is included.</p>
         <label class="field-label" for="sstb-status"><span>Is this business a specified-service trade or business?</span><select id="sstb-status" class="select-input mt-2"><option value="unsure" selected>Not sure</option><option value="no">No</option><option value="yes">Yes</option></select><span class="field-help mt-2">Examples can include consulting, performing arts, and some income tied to your name or identity. The rules are specific.</span></label>
-        <label class="field-label" for="qualified-property-ubia"><span>Qualified property basis (UBIA)</span><span class="input-wrap mt-2 max-w-72"><span class="input-prefix" aria-hidden="true">$</span><input id="qualified-property-ubia" class="number-input pl-8" type="number" min="0" step="any" value="" inputmode="decimal" placeholder="Enter 0 if none" aria-describedby="ubia-help" /></span><span id="ubia-help" class="field-help mt-2">Use original basis of eligible tangible depreciable property still in its depreciable period, not current market value.</span></label>
+        <label id="qualified-property-field" class="field-label" for="qualified-property-ubia"><span>Qualified property basis (UBIA)</span><span class="input-wrap mt-2 max-w-72"><span class="input-prefix" aria-hidden="true">$</span><input id="qualified-property-ubia" class="number-input pl-8" type="number" min="0" step="any" value="" inputmode="decimal" placeholder="Enter 0 if none" aria-describedby="ubia-help" /></span><span id="ubia-help" class="field-help mt-2">Use original basis of eligible tangible depreciable property still in its depreciable period, not current market value.</span></label>
       </fieldset>
     </form>
   </div>
@@ -147,7 +157,7 @@ import { STATES } from '../lib/tax/states';
       </div>
       <p class="mt-1 text-sm text-muted">After expenses and the taxes included below</p>
 
-      <div id="profit-results" class="mt-6">
+      <div id="profit-results" class="mt-7">
         <div class="result-hero">
           <div>
             <p class="text-xs font-medium uppercase tracking-[0.12em] text-muted">Annual take-home</p>
@@ -159,45 +169,68 @@ import { STATES } from '../lib/tax/states';
           </div>
         </div>
 
-        <div class="mt-5 flex flex-col gap-3 rounded-xl border border-accent/20 bg-accent-soft p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div><p class="text-sm font-semibold text-ink">Suggested tax reserve</p><p id="reserve-recommendation" class="mt-1 text-sm text-muted" aria-live="polite">—</p></div>
-          <label class="field-label w-full sm:max-w-36" for="invoice-amount"><span class="text-xs text-muted">Invoice amount</span><span class="input-wrap mt-1"><span class="input-prefix" aria-hidden="true">$</span><input id="invoice-amount" class="number-input pl-8" type="number" min="0" step="any" value="1000" inputmode="decimal" /></span></label>
-          <p class="invoice-reserve"><span id="invoice-reserve-amount">—</span><span class="mt-0.5 block text-[11px] font-medium uppercase tracking-wide text-muted">to reserve</span></p>
+        <div class="mt-7 grid grid-cols-1 gap-4 rounded-xl border border-accent/20 bg-accent-soft p-4 sm:grid-cols-[minmax(0,1fr)_9rem_auto] sm:items-center sm:gap-4 sm:p-5">
+          <div class="min-w-0"><p class="text-sm font-semibold text-ink">Suggested tax reserve</p><p id="reserve-recommendation" class="mt-1 text-sm text-muted" aria-live="polite">—</p></div>
+          <label class="field-label w-full" for="invoice-amount"><span class="text-xs text-muted">Invoice amount</span><span class="input-wrap mt-1"><span class="input-prefix" aria-hidden="true">$</span><input id="invoice-amount" class="number-input pl-8" type="number" min="0" step="any" value="1000" inputmode="decimal" /></span></label>
+          <p class="invoice-reserve min-w-32 text-left sm:text-right"><span id="invoice-reserve-amount">—</span><span class="mt-0.5 block text-[11px] font-medium uppercase tracking-wide text-muted">to reserve</span></p>
         </div>
 
-        <div class="mt-6">
-          <div class="mb-3 flex items-center justify-between gap-3"><h3 class="text-sm font-semibold text-ink">Where revenue goes</h3><span class="text-xs text-muted">Annual</span></div>
+        <div class="mt-8">
+          <div class="mb-4 flex items-center justify-between gap-3"><h3 class="text-sm font-semibold text-ink">Where revenue goes</h3><span class="text-xs text-muted">Annual</span></div>
           <div id="breakdown-bar" class="breakdown-bar" role="img" aria-label="Revenue breakdown"></div>
-          <ul class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted sm:grid-cols-4">
+          <ul class="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 text-xs text-muted sm:grid-cols-2">
             <li class="legend-item"><span class="legend-dot bg-expenses"></span><span>Expenses</span><strong id="breakdown-expenses" class="text-ink">—</strong></li>
-            <li class="legend-item"><span class="legend-dot bg-taxes"></span><span>Taxes</span><strong id="breakdown-taxes" class="text-ink">—</strong></li>
+            <li class="legend-item"><span class="legend-dot bg-taxes"></span><span>Federal taxes on business</span><strong id="breakdown-federal-tax" class="text-ink">—</strong></li>
+            <li class="legend-item"><span class="legend-dot bg-state-reserve"></span><span>State/local reserve assumption</span><strong id="breakdown-state-reserve" class="text-ink">—</strong></li>
             <li class="legend-item"><span class="legend-dot bg-net"></span><span>Take-home</span><strong id="breakdown-net" class="text-ink">—</strong></li>
-            <li id="breakdown-gap-row" class="legend-item col-span-2 sm:col-span-1" hidden><span class="legend-dot bg-gap"></span><span>Cash gap</span><strong id="breakdown-gap" class="text-ink">—</strong></li>
+            <li id="breakdown-gap-row" class="legend-item" hidden><span class="legend-dot bg-gap"></span><span>Cash gap</span><strong id="breakdown-gap" class="text-ink">—</strong></li>
           </ul>
         </div>
 
-        <div class="mt-6 divide-y divide-line border-y border-line text-sm">
-          <div class="tax-row"><span>Federal income tax on business</span><strong id="federal-tax-amount">—</strong></div>
-          <div class="tax-row"><span>Self-employment tax</span><strong id="se-tax-amount">—</strong></div>
-          <div class="tax-row"><span>Additional Medicare tax</span><strong id="additional-medicare-amount">—</strong></div>
-          <div class="tax-row"><span id="state-tax-label">State/local reserve</span><strong id="state-tax-amount">—</strong></div>
-          <div class="tax-row font-semibold text-ink"><span>Total estimated taxes</span><strong id="total-tax-amount">—</strong></div>
+        <div class="mt-8 border-t border-line pt-5">
+          <h3 class="text-sm font-semibold text-ink">Business tax and reserve</h3>
+          <div class="mt-2 divide-y divide-line border-y border-line text-sm">
+            <div class="tax-row"><span>Federal income tax on business</span><strong id="federal-tax-amount">—</strong></div>
+            <div class="tax-row"><span>Self-employment tax</span><strong id="se-tax-amount">—</strong></div>
+            <div class="tax-row"><span>Additional Medicare tax</span><strong id="additional-medicare-amount">—</strong></div>
+            <div class="tax-row"><span id="state-tax-label">State/local reserve</span><strong id="state-tax-amount">—</strong></div>
+            <div class="tax-row font-semibold text-ink"><span>Total business tax and reserve</span><strong id="total-tax-amount">—</strong></div>
+          </div>
         </div>
         <p id="state-result-note" class="mt-3 text-xs leading-5 text-muted" aria-live="polite"></p>
         <p id="qbi-result-note" class="mt-2 text-xs leading-5 text-muted"></p>
         <p id="profit-status-note" class="sr-only" aria-live="polite"></p>
       </div>
 
-      <div id="break-even-results" class="mt-6 rounded-xl border border-line bg-surface-muted p-5" hidden>
+      <div id="break-even-results" class="mt-7 rounded-xl border border-line bg-surface-muted p-5 sm:p-6" hidden>
         <p class="text-xs font-medium uppercase tracking-[0.12em] text-muted">Break-even</p>
-        <p class="mt-2 text-3xl font-semibold tracking-tight text-ink">$0 estimated take-home</p>
-        <p class="mt-2 text-sm leading-6 text-muted">Revenue is fully used by expenses. Estimated business tax reserve and take-home are both $0 at break-even.</p>
+        <p class="mt-2 text-3xl font-semibold tracking-tight text-ink"><span id="break-even-take-home-annual">$0</span> annual business take-home</p>
+        <div class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <div><p class="text-xs text-muted">Annual business profit</p><strong id="break-even-business-profit" class="mt-1 block text-ink">$0</strong></div>
+          <div><p class="text-xs text-muted">Monthly business take-home</p><strong id="break-even-take-home-monthly" class="mt-1 block text-ink">$0</strong></div>
+          <div><p class="text-xs text-muted">Business reserve rate</p><strong id="break-even-reserve-rate" class="mt-1 block text-ink">0%</strong></div>
+          <div><p class="text-xs text-muted">Reserve for invoice</p><strong id="break-even-invoice-reserve" class="mt-1 block text-ink">$0</strong><span id="break-even-invoice-context" class="mt-1 block text-xs text-muted">for this invoice</span></div>
+        </div>
+        <p class="mt-3 text-sm leading-6 text-muted">Revenue is fully used by expenses, so business profit and reserve are $0. The household federal estimate below still includes W-2 wages and payments entered.</p>
       </div>
 
-      <div id="loss-results" class="mt-6 rounded-xl border border-loss/25 bg-loss-soft p-5" hidden>
+      <div id="loss-results" class="mt-7 rounded-xl border border-loss/25 bg-loss-soft p-5 sm:p-6" hidden>
         <p class="text-xs font-medium uppercase tracking-[0.12em] text-loss">Cash deficit</p>
         <p id="loss-amount" class="mt-2 text-3xl font-semibold tracking-tight text-ink">—</p>
-        <p class="mt-2 text-sm leading-6 text-muted">Expenses exceed receipts. This estimate doesn’t calculate a tax benefit or take-home pay for a business loss.</p>
+        <p class="mt-2 text-sm leading-6 text-muted">Expenses exceed receipts. The household federal estimate below uses W-2 income without applying the loss, so it may be higher than your actual liability. This estimate doesn’t calculate a loss tax benefit or business take-home.</p>
+      </div>
+
+      <div id="household-federal-results" class="mt-6 rounded-xl border border-line bg-surface-muted p-4 sm:p-5" aria-labelledby="household-federal-heading">
+        <h3 id="household-federal-heading" class="text-sm font-semibold text-ink">Household federal estimate</h3>
+        <div class="mt-2 divide-y divide-line text-sm">
+          <div class="tax-row"><span>Federal tax liability before payments</span><strong id="household-federal-liability">—</strong></div>
+          <div class="tax-row"><span>W-2 federal income tax withheld</span><strong id="household-federal-withholding">—</strong></div>
+          <div class="tax-row"><span>Estimated federal tax payments</span><strong id="household-estimated-payments">—</strong></div>
+          <div class="tax-row"><span>Eligible excess Social Security withholding</span><strong id="household-excess-social-security">—</strong></div>
+          <div class="tax-row"><span>Additional Medicare Tax withheld</span><strong id="household-additional-medicare-withholding">—</strong></div>
+          <div class="tax-row font-semibold text-ink"><span id="household-federal-balance-label">Remaining federal balance</span><strong id="household-federal-balance">—</strong></div>
+        </div>
+        <p id="household-federal-balance-note" class="mt-2 text-xs leading-5 text-muted"></p>
       </div>
 
       <div class="mt-5 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">

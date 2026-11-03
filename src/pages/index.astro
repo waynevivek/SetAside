@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TaxCalculator from '../components/TaxCalculator.astro';
+import { ACTIVE_TAX_YEAR } from '../lib/tax/activeYear';
 
 const pageTitle = 'Freelancer Tax & Take-Home Estimator | SetAside';
 const pageDescription = 'Estimate federal self-employment taxes, take-home pay, and a practical tax reserve for your freelance or creator income. Free, private, and calculated in your browser.';
@@ -20,7 +21,7 @@ const faqs = [
   },
   {
     question: 'Is this estimate the same as my tax return?',
-    answer: 'No. It is a cash-planning estimate for one U.S. self-employed business. It uses 2026 federal brackets and the standard deduction, and it omits credits, itemized deductions, several special deductions, estimated payments, and other tax rules. Your actual return may differ.',
+    answer: `No. It is a cash-planning estimate for one U.S. self-employed business. It uses ${ACTIVE_TAX_YEAR.year} federal brackets and the standard deduction, and it includes only the W-2 withholding and estimated payments you enter. It omits other credits, itemized deductions, several special deductions, and other tax rules. Your actual return may differ.`,
   },
   {
     question: 'Are my income and expense numbers stored or sent anywhere?',
@@ -68,7 +69,7 @@ const faqs = [
     </section>
 
     <footer class="mx-auto mt-16 flex max-w-6xl flex-col gap-2 border-t border-line pt-5 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
-      <span>SetAside · 2026 federal tax estimate</span>
+      <span>SetAside · {ACTIVE_TAX_YEAR.year} federal tax estimate</span>
       <span>For planning only. Verify your situation with a qualified tax professional.</span>
     </footer>
   </main>
