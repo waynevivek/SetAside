@@ -236,9 +236,13 @@ function setBreakdown(result: Extract<EstimateResult, { kind: 'profit' }>): void
   const totalShown = hasCashGap
     ? result.businessExpenses + result.totalEstimatedTax
     : result.grossReceipts;
+  const businessFederalTax = result.federalIncomeTax
+    + result.selfEmploymentTax
+    + result.additionalMedicareTax;
   const segments = [
     { id: 'expenses', value: result.businessExpenses, color: 'bg-expenses' },
-    { id: 'taxes', value: result.totalEstimatedTax, color: 'bg-taxes' },
+    { id: 'federal-tax', value: businessFederalTax, color: 'bg-taxes' },
+    { id: 'state-reserve', value: result.stateTax.amount, color: 'bg-state-reserve' },
     { id: 'net', value: Math.max(0, result.takeHomeAnnual), color: 'bg-net' },
   ];
   bar.replaceChildren();
@@ -255,12 +259,16 @@ function setBreakdown(result: Extract<EstimateResult, { kind: 'profit' }>): void
     bar.append(part);
   }
 
+  const stateReserveDescription = result.stateTax.status === 'included'
+    ? `${formatCurrency(result.stateTax.amount)} state/local reserve assumption`
+    : 'no state/local reserve entered';
   const description = hasCashGap
-    ? `Business receipts ${formatCurrency(result.grossReceipts)}. Expenses and included estimated taxes total ${formatCurrency(totalShown)}, exceeding receipts by ${formatCurrency(Math.abs(result.takeHomeAnnual))}.`
-    : `Business receipts of ${formatCurrency(result.grossReceipts)} split into ${formatCurrency(result.businessExpenses)} expenses, ${formatCurrency(result.totalEstimatedTax)} estimated taxes, and ${formatCurrency(result.takeHomeAnnual)} take-home.`;
+    ? `Business receipts ${formatCurrency(result.grossReceipts)}. Expenses, business-attributable federal taxes, and ${stateReserveDescription} total ${formatCurrency(totalShown)}, exceeding receipts by ${formatCurrency(Math.abs(result.takeHomeAnnual))}.`
+    : `Business receipts of ${formatCurrency(result.grossReceipts)} split into ${formatCurrency(result.businessExpenses)} expenses, ${formatCurrency(businessFederalTax)} federal taxes attributable to the business, ${stateReserveDescription}, and ${formatCurrency(result.takeHomeAnnual)} take-home.`;
   bar.setAttribute('aria-label', description);
   setText('breakdown-expenses', formatCurrency(result.businessExpenses));
-  setText('breakdown-taxes', formatCurrency(result.totalEstimatedTax));
+  setText('breakdown-federal-tax', formatCurrency(businessFederalTax));
+  setText('breakdown-state-reserve', formatCurrency(result.stateTax.amount));
   setText('breakdown-net', formatCurrency(result.takeHomeAnnual));
   requiredElement('breakdown-gap-row', HTMLLIElement).hidden = !hasCashGap;
   setText('breakdown-gap', formatCurrency(Math.abs(result.takeHomeAnnual)));

@@ -33,7 +33,7 @@ export function calculateQbiDeduction(input: QbiInput): QbiTreatment {
       return {
         status: 'omitted',
         deduction: 0,
-        reason: 'QBI is not included because the higher-income service-trade or qualified-property details are incomplete.',
+        reason: 'QBI is omitted because the higher-income service-trade or qualified-property details are incomplete. The estimate may be higher than your actual federal tax liability.',
       };
     }
 

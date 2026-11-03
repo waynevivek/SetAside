@@ -178,9 +178,10 @@ import { STATES } from '../lib/tax/states';
         <div class="mt-6">
           <div class="mb-3 flex items-center justify-between gap-3"><h3 class="text-sm font-semibold text-ink">Where revenue goes</h3><span class="text-xs text-muted">Annual</span></div>
           <div id="breakdown-bar" class="breakdown-bar" role="img" aria-label="Revenue breakdown"></div>
-          <ul class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted sm:grid-cols-4">
+          <ul class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted sm:grid-cols-5">
             <li class="legend-item"><span class="legend-dot bg-expenses"></span><span>Expenses</span><strong id="breakdown-expenses" class="text-ink">—</strong></li>
-            <li class="legend-item"><span class="legend-dot bg-taxes"></span><span>Taxes</span><strong id="breakdown-taxes" class="text-ink">—</strong></li>
+            <li class="legend-item"><span class="legend-dot bg-taxes"></span><span>Federal taxes on business</span><strong id="breakdown-federal-tax" class="text-ink">—</strong></li>
+            <li class="legend-item"><span class="legend-dot bg-state-reserve"></span><span>State/local reserve assumption</span><strong id="breakdown-state-reserve" class="text-ink">—</strong></li>
             <li class="legend-item"><span class="legend-dot bg-net"></span><span>Take-home</span><strong id="breakdown-net" class="text-ink">—</strong></li>
             <li id="breakdown-gap-row" class="legend-item col-span-2 sm:col-span-1" hidden><span class="legend-dot bg-gap"></span><span>Cash gap</span><strong id="breakdown-gap" class="text-ink">—</strong></li>
           </ul>
@@ -191,7 +192,7 @@ import { STATES } from '../lib/tax/states';
           <div class="tax-row"><span>Self-employment tax</span><strong id="se-tax-amount">—</strong></div>
           <div class="tax-row"><span>Additional Medicare tax</span><strong id="additional-medicare-amount">—</strong></div>
           <div class="tax-row"><span id="state-tax-label">State/local reserve</span><strong id="state-tax-amount">—</strong></div>
-          <div class="tax-row font-semibold text-ink"><span>Total estimated taxes</span><strong id="total-tax-amount">—</strong></div>
+          <div class="tax-row font-semibold text-ink"><span>Total business tax and reserve</span><strong id="total-tax-amount">—</strong></div>
         </div>
         <p id="state-result-note" class="mt-3 text-xs leading-5 text-muted" aria-live="polite"></p>
         <p id="qbi-result-note" class="mt-2 text-xs leading-5 text-muted"></p>
