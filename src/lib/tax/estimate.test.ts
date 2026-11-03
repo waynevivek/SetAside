@@ -286,6 +286,10 @@ test('applies the QBI threshold, phase-in, SSTB, and qualified-property limits',
     taxpayerW2: { box1: 253_756.4775 },
     qbiHighIncomeDetails: { sstb: 'yes', qualifiedPropertyUbia: 100_000 },
   });
+  const fullyPhasedOutSstbWithoutUbia = estimateSingle({
+    taxpayerW2: { box1: 253_756.4775 },
+    qbiHighIncomeDetails: { sstb: 'yes', qualifiedPropertyUbia: null },
+  });
   const jointAtThreshold = estimateSingle({
     filingStatus: 'marriedJoint',
     taxpayerW2: { box1: 416_806.4775 },
@@ -296,7 +300,8 @@ test('applies the QBI threshold, phase-in, SSTB, and qualified-property limits',
   });
 
   for (const result of [atThreshold, aboveThresholdWithoutDetails, phasedNonSstbWithoutProperty,
-    phasedNonSstbWithProperty, phasedSstb, fullyPhasedOutSstb, jointAtThreshold, jointAboveThreshold]) {
+    phasedNonSstbWithProperty, phasedSstb, fullyPhasedOutSstb,
+    fullyPhasedOutSstbWithoutUbia, jointAtThreshold, jointAboveThreshold]) {
     if (result.kind !== 'profit') {
       throw new Error('Expected a profitable high-income estimate.');
     }
@@ -305,6 +310,7 @@ test('applies the QBI threshold, phase-in, SSTB, and qualified-property limits',
   if (atThreshold.kind !== 'profit' || aboveThresholdWithoutDetails.kind !== 'profit'
     || phasedNonSstbWithoutProperty.kind !== 'profit' || phasedNonSstbWithProperty.kind !== 'profit'
     || phasedSstb.kind !== 'profit' || fullyPhasedOutSstb.kind !== 'profit'
+    || fullyPhasedOutSstbWithoutUbia.kind !== 'profit'
     || jointAtThreshold.kind !== 'profit' || jointAboveThreshold.kind !== 'profit') {
     throw new Error('Expected profitable estimates for the QBI boundary cases.');
   }
@@ -318,6 +324,8 @@ test('applies the QBI threshold, phase-in, SSTB, and qualified-property limits',
   assert.equal(roundToFourDecimals(phasedSstb.qbiTreatment.deduction), 1_849.6518);
   assert.equal(fullyPhasedOutSstb.qbiTreatment.status, 'notEligible');
   assert.equal(fullyPhasedOutSstb.qbiTreatment.deduction, 0);
+  assert.equal(fullyPhasedOutSstbWithoutUbia.qbiTreatment.status, 'notEligible');
+  assert.equal(fullyPhasedOutSstbWithoutUbia.qbiTreatment.deduction, 0);
   assert.equal(roundToFourDecimals(jointAtThreshold.taxableIncomeBeforeQbi), 394_600);
   assert.equal(jointAtThreshold.qbiTreatment.status, 'included');
   assert.equal(jointAboveThreshold.qbiTreatment.status, 'omitted');

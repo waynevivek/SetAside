@@ -29,7 +29,7 @@ export function calculateQbiDeduction(input: QbiInput): QbiTreatment {
   if (taxableIncome > thresholds.threshold) {
     const details = input.highIncomeDetails;
 
-    if (details === undefined || details.sstb === 'unsure' || details.qualifiedPropertyUbia === null) {
+    if (details === undefined || details.sstb === 'unsure') {
       return {
         status: 'omitted',
         deduction: 0,
@@ -41,7 +41,6 @@ export function calculateQbiDeduction(input: QbiInput): QbiTreatment {
       1,
       (taxableIncome - thresholds.threshold) / thresholds.phaseInRange,
     );
-    eligibleUbia = Math.max(0, details.qualifiedPropertyUbia);
 
     if (details.sstb === 'yes') {
       const eligiblePercentage = 1 - phaseIn;
@@ -55,8 +54,21 @@ export function calculateQbiDeduction(input: QbiInput): QbiTreatment {
       }
 
       eligibleQbi *= eligiblePercentage;
-      eligibleUbia *= eligiblePercentage;
       minimumApplies = eligibleQbi >= ACTIVE_TAX_YEAR.qbi.minimumQbi;
+    }
+
+    if (details.qualifiedPropertyUbia === null) {
+      return {
+        status: 'omitted',
+        deduction: 0,
+        reason: 'QBI is omitted because the higher-income qualified-property basis is incomplete. The estimate may be higher than your actual federal tax liability.',
+      };
+    }
+
+    eligibleUbia = Math.max(0, details.qualifiedPropertyUbia);
+
+    if (details.sstb === 'yes') {
+      eligibleUbia *= 1 - phaseIn;
     }
   }
 

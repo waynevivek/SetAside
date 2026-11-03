@@ -236,9 +236,22 @@ function updateSpouseFields(filingStatus: FilingStatus): void {
   requiredElement('spouse-wages-fields', HTMLDivElement).hidden = filingStatus !== 'marriedJoint';
 }
 
-function updateQbiFields(result: EstimateResult): void {
+function updateQbiFields(result: EstimateResult, filingStatus: FilingStatus): void {
   const fields = requiredElement('qbi-fields', HTMLFieldSetElement);
-  fields.hidden = result.kind !== 'profit' || result.taxableIncomeBeforeQbi <= result.qbiThreshold;
+  const isHighIncome = result.kind === 'profit'
+    && result.taxableIncomeBeforeQbi > result.qbiThreshold;
+  fields.hidden = !isHighIncome;
+
+  const propertyField = requiredElement('qualified-property-field', HTMLLabelElement);
+  if (!isHighIncome) {
+    propertyField.hidden = true;
+    return;
+  }
+
+  const thresholds = ACTIVE_TAX_YEAR.qbi.threshold[filingStatus];
+  const sstbFullyPhasedOut = parseSstbAnswer(requiredSelect('sstb-status').value) === 'yes'
+    && result.taxableIncomeBeforeQbi >= thresholds.threshold + thresholds.phaseInRange;
+  propertyField.hidden = sstbFullyPhasedOut;
 }
 
 function setText(id: string, value: string): void {
@@ -571,7 +584,7 @@ function initializeCalculator(): void {
     latestFormState = readCalculatorFormState();
     latestResult = estimateTax(normalizeCalculatorForm(latestFormState));
     updateSpouseFields(latestFormState.filingStatus);
-    updateQbiFields(latestResult);
+    updateQbiFields(latestResult, latestFormState.filingStatus);
     renderResult(latestResult, latestFormState.invoiceAmount);
     setText('copy-status', '');
   };
