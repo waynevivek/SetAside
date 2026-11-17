@@ -1,6 +1,6 @@
 # SetAside: Freelancer and Creator Tax & Take-Home Estimator
 
-> **Status: Draft for product-owner review.** This specification records the decisions from the completed Grill with Docs phase. It does not authorize application changes or implementation tickets. The existing application is to be preserved and reconciled against this spec after approval.
+> **Status: Approved for v1 release (supports 2026 default from final IRS Rev. Proc. 2025-32 & SSA planning figures, plus 2025 backed by final IRS return forms).** This specification incorporates the Grill with Docs decisions, pre-release review decisions, and amended ADR 0011. The existing application is preserved and reconciled against these requirements.
 
 ## Problem Statement
 
@@ -85,7 +85,7 @@ The product remains a planning estimator. It does not prepare a return, determin
 
 ### Federal tax model and results
 
-- Maintain tax-year values as versioned data and select the latest tax year whose official figures, thresholds, forms, and calculations have been verified before release. Display the active tax year. Use 2026 only if its final sources and calculations pass that review; otherwise select the latest fully verified year.
+- Maintain tax-year values as versioned data. Default to the current planning tax year (`2026`) whose official IRS Revenue Procedure (`Rev. Proc. 2025-32`), SSA wage base (`$184,500`), and enacted statutory rules (`IRC § 199A(i)`) have been verified, and allow switching to the prior year backed by final annual return forms (`2025`). Display the selected tax year and note when year-end return forms for the selected year are still IRS drafts.
 - Calculate household federal income tax using modeled taxpayer and (for joint returns) spouse Box 1 wages, business profit, the standard deduction, applicable self-employment adjustments, the QBI deduction when supported, and the active year's progressive brackets.
 - Calculate self-employment tax for the single supported business using taxpayer Box 3 Social Security wages for the individual's wage-base interaction. Use taxpayer and spouse Box 5 Medicare wages as applicable to the active-year Additional Medicare Tax rules. The model does not include a spouse's self-employment business.
 - Return two distinct views: total modeled household federal tax liability and remaining household federal balance; and the incremental federal tax attributable to the freelance business, used for freelance take-home and reserve. Household liability comprises modeled federal income tax, self-employment tax, and Additional Medicare Tax before payments. Calculate the freelance-attributable amount as the difference between modeled household federal liability with positive business profit and a W-2-only baseline using the same filing status, wages, and standard deduction. Include the modeled changes caused by the business, including federal income tax, self-employment tax, and Additional Medicare Tax. Calculate this before payments; withholding and estimated payments affect only the household remaining balance. Do not subtract household W-2 tax from business receipts as if the business caused it.
@@ -97,9 +97,9 @@ The product remains a planning estimator. It does not prepare a return, determin
 ### W-2 inputs
 
 - Keep W-2 inputs in an optional section collapsed by default. Accept blank and zero values and explain each box in plain language.
-- Aggregate annual totals across the user's W-2 forms: taxpayer Boxes 1 (federal wages), 2 (federal income tax withheld), 3 (Social Security wages), 4 (Social Security tax withheld), 5 (Medicare wages), and 6 (Medicare tax withheld, including any Additional Medicare Tax).
-- For Married Filing Jointly, collect spouse Boxes 1, 2, 4, 5, and 6. Do not collect spouse Box 3 because the model supports only the taxpayer's self-employment business and the spouse's Box 3 does not reduce the taxpayer's Social Security wage base.
-- Keep W-2 withholding separate from estimated federal tax payments. Use Box 6 with Box 5 to identify only the Additional Medicare withholding that is creditable; use Box 4 only to the extent the active-year IRS rules allow excess Social Security withholding to be credited.
+- Aggregate annual totals across the user's W-2 forms: taxpayer Boxes 1 (federal wages), 2 (federal income tax withheld), 3 (Social Security wages), 4 (Social Security tax withheld), 5 (Medicare wages), and 6 (Medicare tax withheld, including any Additional Medicare Tax), plus a separate indicator for whether the taxpayer had two or more employers.
+- For Married Filing Jointly, collect spouse Boxes 1, 2, 4, 5, and 6, plus a separate spouse two-or-more-employers indicator. Do not collect spouse Box 3 because the model supports only the taxpayer's self-employment business and the spouse's Box 3 does not reduce the taxpayer's Social Security wage base.
+- Keep W-2 withholding separate from estimated federal tax payments. Use Box 6 with Box 5 to identify only the Additional Medicare withholding that is creditable; if Box 6 is entered while Box 5 is blank or zero for that person, show a validation warning for that person and exclude that person's Box 6 from the credit without blocking the rest of the calculation. Use Box 4 symmetrically for taxpayer and spouse to credit excess Social Security withholding only when that person's two-or-more-employers requirement is satisfied.
 
 ### QBI
 
@@ -112,7 +112,7 @@ The product remains a planning estimator. It does not prepare a return, determin
 - The state selector provides context; V1 does not calculate state tax brackets or state tax liability.
 - In states without individual income tax, initialize the user-editable state/local reserve rate to 0%, representing the state income-tax portion; users may increase it to include local taxes. For other states, leave the combined state/local reserve blank until the user enters a rate. A user-entered rate is not decomposed into state and local liability.
 - Apply a user-entered state/local reserve percentage to positive business profit. If blank, exclude state/local reserves from business take-home and label the exclusion. Always describe the rate as a user-defined planning assumption.
-- Derive the invoice reserve rate from freelance-attributable federal taxes plus the user-supplied state/local reserve divided by projected gross receipts. Round up to the next whole percentage point, apply it to each invoice amount, and add no separate buffer. Label it a planning recommendation, not a guaranteed tax rate.
+- Derive the invoice reserve rate from freelance-attributable federal taxes plus the user-supplied state/local reserve divided by projected gross receipts. Round the percentage rate up to the next whole percentage point, apply it to each invoice amount preserving cents in the dollar reserve (do not round up to a whole dollar), and add no separate buffer. Label it a planning recommendation, not a guaranteed tax rate.
 - Keep the visual allocation reconciled to business receipts: business expenses, freelance-attributable tax and state/local reserve amounts, and freelance take-home. Do not use total household liability as a business-bar segment.
 
 ### Architecture and experience
@@ -131,11 +131,11 @@ The product remains a planning estimator. It does not prepare a return, determin
 - Validate expected outputs against authoritative, final IRS forms, instructions, worksheets, and examples for the selected tax year. Include boundary scenarios for Social Security wage bases, Additional Medicare thresholds, filing-status brackets, and QBI thresholds/phase-ins.
 - Keep calculations pure and deterministic: no DOM, wall-clock, network, browser storage, or clipboard dependency at the test seam.
 - UI verification remains manual for now, including period/expense synchronization, optional W-2 field visibility, slider/number consistency, accessible keyboard behavior, copy action, dark mode, and responsive layouts.
-- No tests are to be written or run during this To-Spec phase. The repository currently has no test runner or existing test patterns; test tooling and test implementation belong to an approved implementation ticket.
+- Automated calculation tests run via `npm test` (`node --import tsx --test src/lib/tax/estimate.test.ts`), covering pure `estimateTax()` scenarios and boundary regressions.
 
 ## Calculation Risks and Verification Gates
 
-1. **Active tax year is not yet validated.** The current application has hard-coded 2026 values. At the time of this draft, the IRS 2026 Form 1040, Form 8959, and Form 8995 instructions are still labeled drafts. Draft values cannot satisfy the release policy. The 2025 model is also not yet verified end to end. Select a year only after reviewing its final official sources.
+1. **Active tax year sources differ between 2025 and 2026.** For 2025, IRS Form 1040, Form 8959, Schedule SE, and Form 8995 instructions are final. For 2026, IRS Rev. Proc. 2025-32, SSA's $184,500 wage base, and 2026 Form 1040-ES / Pub 505 are published, while year-end Form 8959 and Form 8995/8995-A instructions remain IRS drafts ahead of filing season (notably introducing the statutory IRC § 199A(i) $400 minimum active QBI deduction for ≥$1,000 QBI and expanded $75k/$150k phase-in ranges). Disclose this clearly and re-verify 2026 once final 2026 forms publish.
 2. **Household liability and business attribution are different calculations.** The current application returns incremental federal income tax attributable to the business, not a complete household liability plus payment balance. The revised estimate must avoid double-counting W-2 income tax in freelance take-home.
 3. **W-2 withholding and payroll credits require form-based reconciliation.** The current application lacks Boxes 2, 4, and 6 and estimated payments. Box 6 includes regular Medicare and possibly Additional Medicare withholding; only the eligible Additional Medicare amount is credited. Box 4 excess is creditable only under applicable IRS rules, including multiple-employer conditions. Verify taxpayer and spouse handling against the active-year instructions.
 4. **Self-employment tax interactions require validation.** Check Schedule SE treatment, the taxpayer's Box 3 wage-base interaction, the 92.35% net-earnings factor, deductible half of SE tax, and Additional Medicare thresholds/combined household wage rules against the active year's final materials.
@@ -175,7 +175,7 @@ As of this draft, the IRS lists the 2026 [Form 1040](https://www.irs.gov/pub/irs
 | 0008 | Box 6 is reconciled to Box 5 to account for eligible Additional Medicare withholding. |
 | 0009 | Box 4 is used to account for eligible excess Social Security withholding. |
 | 0010 | QBI is included with conditional high-income inputs and an omission warning when required details are unavailable. |
-| 0011 | Use the latest fully verified tax year at release; display the active year. |
+| 0011 | Support verified 2026 planning figures (default) alongside final-form 2025 with a tax-year selector. |
 | 0012 | Show surplus payments as an estimated overpayment, not a promised refund. |
 | 0013 | Loss cases show a W-2-based estimate without applying the business loss and omit business take-home/reserve. |
 | 0014 | Household liability and freelance-attributable tax are separate views; break-even keeps the household view. |

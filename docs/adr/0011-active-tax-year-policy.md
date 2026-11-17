@@ -1,3 +1,3 @@
-# Use the latest fully verified tax year at launch
+# Support verified planning figures for the active tax year alongside the prior verified year
 
-The calculator uses the latest tax year whose official IRS figures, thresholds, forms, and calculation rules have been verified before release, and displays that tax year prominently. Use 2026 only if its final official inputs and calculations are verified by launch; otherwise use the latest verified year.
+The calculator defaults to the current tax year whose official statutory rules and IRS/SSA planning figures (Revenue Procedure inflation adjustments, Social Security wage base, and Form 1040-ES / Publication 505 parameters) have been verified, even when year-end annual return forms and instructions (`Form 1040`, `Form 8959`, `Form 8995`) are still published as IRS drafts ahead of filing season. Provide a tax-year selector between the default active year (`2026`) and the latest year backed by final return forms (`2025`), display the active year prominently, and disclose when year-end filing forms for the selected year are still IRS drafts.
