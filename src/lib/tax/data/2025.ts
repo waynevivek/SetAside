@@ -4,14 +4,23 @@ import type { TaxYearData } from '../types';
 export const TAX_YEAR_2025: TaxYearData = {
   year: 2025,
   verifiedOn: '2026-11-03',
+  verificationStatus: 'finalForms',
   sources: [
     {
       title: 'Federal income tax rates and brackets for 2025',
       url: 'https://www.irs.gov/filing/federal-income-tax-rates-and-brackets',
     },
     {
+      title: 'Rev. Proc. 2024-40 (2025 federal income tax brackets and QBI thresholds)',
+      url: 'https://www.irs.gov/pub/irs-drop/rp-24-40.pdf',
+    },
+    {
       title: 'Rev. Proc. 2025-32, including amended 2025 standard deductions',
       url: 'https://www.irs.gov/irb/2025-45_IRB',
+    },
+    {
+      title: 'SSA Contribution and Benefit Base (2025 Social Security wage base)',
+      url: 'https://www.ssa.gov/oact/cola/cbb.html',
     },
     {
       title: 'Instructions for Schedule SE (Form 1040), 2025',

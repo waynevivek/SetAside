@@ -1,5 +1,5 @@
-import { ACTIVE_TAX_YEAR } from './activeYear';
-import type { FilingStatus, SpouseW2Details, TaxpayerW2Details } from './types';
+import { getTaxYearData } from './activeYear';
+import type { FilingStatus, SpouseW2Details, TaxYearData, TaxpayerW2Details } from './types';
 
 export interface SelfEmploymentTaxInput {
   netProfit: number;
@@ -10,6 +10,7 @@ export interface SelfEmploymentTaxInput {
 
 export interface SelfEmploymentTaxResult {
   netEarnings: number;
+  taxableSelfEmploymentIncome: number;
   socialSecurityTax: number;
   medicareTax: number;
   selfEmploymentTax: number;
@@ -19,37 +20,36 @@ export interface SelfEmploymentTaxResult {
 
 export function calculateSelfEmploymentTax(
   input: SelfEmploymentTaxInput,
+  taxYearData: TaxYearData = getTaxYearData(),
 ): SelfEmploymentTaxResult {
-  const netEarnings = Math.max(0, input.netProfit) * ACTIVE_TAX_YEAR.selfEmploymentNetEarningsFactor;
-  const filingThreshold = ACTIVE_TAX_YEAR.selfEmploymentFilingThreshold;
+  const netEarnings = Math.max(0, input.netProfit) * taxYearData.selfEmploymentNetEarningsFactor;
+  const filingThreshold = taxYearData.selfEmploymentFilingThreshold;
+  const taxableSelfEmploymentIncome = netEarnings < filingThreshold ? 0 : netEarnings;
   const isJointReturn = input.filingStatus === 'marriedJoint';
   const coveredW2SocialSecurityWages = Math.min(
-    ACTIVE_TAX_YEAR.socialSecurityWageBase,
+    taxYearData.socialSecurityWageBase,
     Math.max(0, input.taxpayerW2.box3),
   );
   const remainingSocialSecurityWageBase = Math.max(
     0,
-    ACTIVE_TAX_YEAR.socialSecurityWageBase - coveredW2SocialSecurityWages,
+    taxYearData.socialSecurityWageBase - coveredW2SocialSecurityWages,
   );
-  const socialSecurityEarnings = Math.min(netEarnings, remainingSocialSecurityWageBase);
-  const socialSecurityTax = netEarnings < filingThreshold
-    ? 0
-    : socialSecurityEarnings * ACTIVE_TAX_YEAR.socialSecurityRate;
-  const medicareTax = netEarnings < filingThreshold
-    ? 0
-    : netEarnings * ACTIVE_TAX_YEAR.medicareRate;
+  const socialSecurityEarnings = Math.min(taxableSelfEmploymentIncome, remainingSocialSecurityWageBase);
+  const socialSecurityTax = socialSecurityEarnings * taxYearData.socialSecurityRate;
+  const medicareTax = taxableSelfEmploymentIncome * taxYearData.medicareRate;
   const selfEmploymentTax = socialSecurityTax + medicareTax;
   const medicareWages = Math.max(0, input.taxpayerW2.box5)
     + (isJointReturn ? Math.max(0, input.spouseW2?.box5 ?? 0) : 0);
   const remainingAdditionalMedicareThreshold = Math.max(
     0,
-    ACTIVE_TAX_YEAR.additionalMedicareThreshold[input.filingStatus] - medicareWages,
+    taxYearData.additionalMedicareThreshold[input.filingStatus] - medicareWages,
   );
-  const additionalMedicareTax = Math.max(0, netEarnings - remainingAdditionalMedicareThreshold)
-    * ACTIVE_TAX_YEAR.additionalMedicareRate;
+  const additionalMedicareTax = Math.max(0, taxableSelfEmploymentIncome - remainingAdditionalMedicareThreshold)
+    * taxYearData.additionalMedicareRate;
 
   return {
     netEarnings,
+    taxableSelfEmploymentIncome,
     socialSecurityTax,
     medicareTax,
     selfEmploymentTax,

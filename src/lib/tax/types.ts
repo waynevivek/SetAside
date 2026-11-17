@@ -1,5 +1,13 @@
 import type { StateCode } from './states';
 
+export const SUPPORTED_TAX_YEARS = [2026, 2025] as const;
+
+export type SupportedTaxYear = (typeof SUPPORTED_TAX_YEARS)[number];
+
+export type TaxYearVerificationStatus =
+  | 'finalForms'
+  | 'planningFiguresWithDraftReturnForms';
+
 export const FILING_STATUSES = [
   'single',
   'marriedJoint',
@@ -17,6 +25,7 @@ export interface TaxpayerW2Details {
   box4: number;
   box5: number;
   box6: number;
+  hasMultipleEmployers?: boolean;
 }
 
 export interface SpouseW2Details {
@@ -25,6 +34,7 @@ export interface SpouseW2Details {
   box4: number;
   box5: number;
   box6: number;
+  hasMultipleEmployers?: boolean;
 }
 
 export type SstbAnswer = 'yes' | 'no' | 'unsure';
@@ -35,6 +45,7 @@ export interface QbiHighIncomeDetails {
 }
 
 export interface EstimateInput {
+  taxYear?: SupportedTaxYear;
   filingStatus: FilingStatus;
   grossReceipts: number;
   businessExpenses: number;
@@ -62,8 +73,9 @@ export interface TaxYearSource {
 }
 
 export interface TaxYearData {
-  year: number;
+  year: SupportedTaxYear;
   verifiedOn: string;
+  verificationStatus: TaxYearVerificationStatus;
   sources: readonly TaxYearSource[];
   standardDeduction: Record<FilingStatus, number>;
   ordinaryBrackets: Record<FilingStatus, readonly TaxBracket[]>;
@@ -104,6 +116,17 @@ export type FederalBalance =
   | { kind: 'estimatedOverpayment'; amount: number }
   | { kind: 'settled'; amount: 0 };
 
+export type W2WarningCode =
+  | 'taxpayerMedicareWagesMissing'
+  | 'spouseMedicareWagesMissing'
+  | 'taxpayerExcessSocialSecurityWagesMismatch';
+
+export interface W2ValidationWarning {
+  code: W2WarningCode;
+  person: 'taxpayer' | 'spouse';
+  message: string;
+}
+
 export interface HouseholdFederalEstimate {
   incomeTax: number;
   selfEmploymentTax: number;
@@ -111,10 +134,12 @@ export interface HouseholdFederalEstimate {
   liability: number;
   payments: HouseholdFederalPayments;
   balance: FederalBalance;
+  warnings: readonly W2ValidationWarning[];
 }
 
 export interface BreakEvenEstimate {
   kind: 'breakEven';
+  taxYear: SupportedTaxYear;
   grossReceipts: number;
   businessExpenses: number;
   businessProfit: 0;
@@ -128,6 +153,7 @@ export interface BreakEvenEstimate {
 
 export interface LossEstimate {
   kind: 'loss';
+  taxYear: SupportedTaxYear;
   grossReceipts: number;
   businessExpenses: number;
   businessLoss: number;
@@ -137,6 +163,7 @@ export interface LossEstimate {
 
 export interface ProfitEstimate {
   kind: 'profit';
+  taxYear: SupportedTaxYear;
   grossReceipts: number;
   businessExpenses: number;
   businessProfit: number;

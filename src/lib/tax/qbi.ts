@@ -1,5 +1,5 @@
-import { ACTIVE_TAX_YEAR } from './activeYear';
-import type { FilingStatus, QbiHighIncomeDetails, QbiTreatment } from './types';
+import { getTaxYearData } from './activeYear';
+import type { FilingStatus, QbiHighIncomeDetails, QbiTreatment, TaxYearData } from './types';
 
 export interface QbiInput {
   filingStatus: FilingStatus;
@@ -8,7 +8,10 @@ export interface QbiInput {
   highIncomeDetails?: QbiHighIncomeDetails;
 }
 
-export function calculateQbiDeduction(input: QbiInput): QbiTreatment {
+export function calculateQbiDeduction(
+  input: QbiInput,
+  taxYearData: TaxYearData = getTaxYearData(),
+): QbiTreatment {
   const qbi = Math.max(0, input.qualifiedBusinessIncome);
 
   if (qbi === 0) {
@@ -19,12 +22,12 @@ export function calculateQbiDeduction(input: QbiInput): QbiTreatment {
     };
   }
 
-  const thresholds = ACTIVE_TAX_YEAR.qbi.threshold[input.filingStatus];
+  const thresholds = taxYearData.qbi.threshold[input.filingStatus];
   const taxableIncome = Math.max(0, input.taxableIncomeBeforeQbi);
-  const limit = Math.max(0, taxableIncome) * ACTIVE_TAX_YEAR.qbi.deductionRate;
+  const limit = Math.max(0, taxableIncome) * taxYearData.qbi.deductionRate;
   let eligibleQbi = qbi;
   let eligibleUbia = 0;
-  let minimumApplies = qbi >= ACTIVE_TAX_YEAR.qbi.minimumQbi;
+  let minimumApplies = taxYearData.qbi.minimumDeduction > 0 && qbi >= taxYearData.qbi.minimumQbi;
 
   if (taxableIncome > thresholds.threshold) {
     const details = input.highIncomeDetails;
@@ -49,12 +52,13 @@ export function calculateQbiDeduction(input: QbiInput): QbiTreatment {
         return {
           status: 'notEligible',
           deduction: 0,
-          reason: `This specified-service business is outside the ${ACTIVE_TAX_YEAR.year} QBI income range.`,
+          reason: `This specified-service business is outside the ${taxYearData.year} QBI income range.`,
         };
       }
 
       eligibleQbi *= eligiblePercentage;
-      minimumApplies = eligibleQbi >= ACTIVE_TAX_YEAR.qbi.minimumQbi;
+      minimumApplies = taxYearData.qbi.minimumDeduction > 0
+        && eligibleQbi >= taxYearData.qbi.minimumQbi;
     }
 
     if (details.qualifiedPropertyUbia === null) {
@@ -72,7 +76,7 @@ export function calculateQbiDeduction(input: QbiInput): QbiTreatment {
     }
   }
 
-  const basicQbiComponent = eligibleQbi * ACTIVE_TAX_YEAR.qbi.deductionRate;
+  const basicQbiComponent = eligibleQbi * taxYearData.qbi.deductionRate;
   const wageAndPropertyLimit = eligibleUbia * 0.025;
   const phaseIn = taxableIncome > thresholds.threshold
     ? Math.min(1, (taxableIncome - thresholds.threshold) / thresholds.phaseInRange)
@@ -80,8 +84,31 @@ export function calculateQbiDeduction(input: QbiInput): QbiTreatment {
   const phasedReduction = Math.max(0, basicQbiComponent - wageAndPropertyLimit) * phaseIn;
   const qbiComponent = Math.max(0, basicQbiComponent - phasedReduction);
   const limitedDeduction = Math.min(qbiComponent, limit);
-  const minimumDeduction = minimumApplies ? ACTIVE_TAX_YEAR.qbi.minimumDeduction : 0;
+  const minimumDeduction = minimumApplies ? taxYearData.qbi.minimumDeduction : 0;
   const deduction = Math.max(limitedDeduction, minimumDeduction);
+
+  if (deduction === 0) {
+    return {
+      status: 'notEligible',
+      deduction: 0,
+      reason: taxableIncome === 0
+        ? 'No QBI deduction applies because estimated taxable income before QBI is $0.'
+        : 'No QBI deduction applies because the high-income W-2 wage and qualified-property (UBIA) limit reduces it to $0.',
+    };
+  }
+
+  if (minimumApplies && minimumDeduction > limitedDeduction) {
+    const minDeductionLabel = `$${minimumDeduction.toLocaleString('en-US')}`;
+    const minQbiLabel = `$${taxYearData.qbi.minimumQbi.toLocaleString('en-US')}`;
+
+    return {
+      status: 'included',
+      deduction,
+      reason: taxableIncome === 0
+        ? `Applies the ${minDeductionLabel} minimum active QBI deduction for at least ${minQbiLabel} of active QBI (taxable income before QBI is already $0, so federal income tax remains $0).`
+        : `Applies the ${minDeductionLabel} minimum active QBI deduction for at least ${minQbiLabel} of active QBI; assumes one eligible U.S. sole-proprietor business.`,
+    };
+  }
 
   return {
     status: 'included',
