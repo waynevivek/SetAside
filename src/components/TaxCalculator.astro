@@ -1,17 +1,35 @@
 ---
-import { ACTIVE_TAX_YEAR } from '../lib/tax/activeYear';
+import { DEFAULT_TAX_YEAR } from '../lib/tax/activeYear';
 import { STATES } from '../lib/tax/states';
+import { SUPPORTED_TAX_YEARS } from '../lib/tax/types';
 ---
 
 <section id="calculator" class="mx-auto grid w-full max-w-6xl gap-5 lg:grid-cols-[1.02fr_0.98fr] lg:items-start" aria-label="Tax and take-home calculator">
   <div class="panel p-5 sm:p-7">
-    <div class="mb-7 flex items-start justify-between gap-4">
-      <div>
+    <div class="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div class="min-w-0">
         <p class="eyebrow">Your numbers</p>
         <h2 class="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">Build your estimate</h2>
         <p class="mt-2 max-w-lg text-sm leading-6 text-muted">Use your expected annual business receipts before expenses. Your entries stay in this tab.</p>
       </div>
-      <span class="year-chip">{ACTIVE_TAX_YEAR.year} tax year</span>
+      <div class="flex shrink-0 flex-col items-start gap-1.5 sm:items-end">
+        <div class="segmented" role="group" aria-label="Tax year">
+          {SUPPORTED_TAX_YEARS.map((year) => {
+            const isDefault = year === DEFAULT_TAX_YEAR;
+            return (
+              <button
+                type="button"
+                class={`segment-button${isDefault ? ' is-selected' : ''}`}
+                data-tax-year={String(year)}
+                aria-pressed={String(isDefault)}
+              >
+                {year}
+              </button>
+            );
+          })}
+        </div>
+        <span id="tax-year-note" class="max-w-64 text-left text-[11px] leading-4 text-muted sm:max-w-52 sm:text-right"></span>
+      </div>
     </div>
 
     <form id="tax-form" class="space-y-7" autocomplete="off" novalidate>
@@ -119,6 +137,14 @@ import { STATES } from '../lib/tax/states';
               <label class="field-label" for="taxpayer-box5"><span>Box 5 · Medicare wages</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box5" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
               <label class="field-label" for="taxpayer-box6"><span>Box 6 · Medicare tax withheld</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="taxpayer-box6" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" aria-describedby="taxpayer-box6-help" /></span><span id="taxpayer-box6-help" class="field-help mt-1">Includes regular Medicare withholding; only the eligible Additional Medicare amount is credited.</span></label>
             </div>
+            <label class="mt-3 flex items-start gap-2.5 text-xs text-ink" for="taxpayer-multiple-employers">
+              <input id="taxpayer-multiple-employers" class="mt-0.5 h-4 w-4 shrink-0 rounded border-line accent-accent" type="checkbox" />
+              <span>
+                <span class="block font-medium">I had two or more employers in <span id="taxpayer-multiple-employers-year">{DEFAULT_TAX_YEAR}</span></span>
+                <span class="mt-0.5 block text-[11px] leading-5 text-muted">Required by the IRS to claim excess Social Security tax withheld above the annual maximum.</span>
+              </span>
+            </label>
+            <p id="taxpayer-w2-warning" class="mt-3 rounded-lg border border-loss/25 bg-loss-soft px-3 py-2 text-xs leading-5 text-loss" role="alert" hidden></p>
           </div>
           <div id="spouse-wages-fields" class="space-y-3" hidden>
             <div><h3 class="text-sm font-medium text-ink">Spouse’s W-2 totals</h3><p class="field-help mt-1">For a joint return, enter the spouse’s Boxes 1, 2, 4, 5, and 6. Spouse Box 3 does not reduce your self-employment Social Security wage base.</p></div>
@@ -129,14 +155,22 @@ import { STATES } from '../lib/tax/states';
               <label class="field-label" for="spouse-box5"><span>Box 5 · Medicare wages</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box5" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
               <label class="field-label" for="spouse-box6"><span>Box 6 · Medicare tax withheld</span><span class="input-wrap mt-2"><span class="input-prefix" aria-hidden="true">$</span><input id="spouse-box6" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" /></span></label>
             </div>
+            <label class="flex items-start gap-2.5 text-xs text-ink" for="spouse-multiple-employers">
+              <input id="spouse-multiple-employers" class="mt-0.5 h-4 w-4 shrink-0 rounded border-line accent-accent" type="checkbox" />
+              <span>
+                <span class="block font-medium">Spouse had two or more employers in <span id="spouse-multiple-employers-year">{DEFAULT_TAX_YEAR}</span></span>
+                <span class="mt-0.5 block text-[11px] leading-5 text-muted">Required by the IRS to claim spouse excess Social Security tax withheld.</span>
+              </span>
+            </label>
+            <p id="spouse-w2-warning" class="rounded-lg border border-loss/25 bg-loss-soft px-3 py-2 text-xs leading-5 text-loss" role="alert" hidden></p>
           </div>
-          <label class="field-label" for="estimated-federal-payments"><span>Estimated federal tax payments <span class="font-normal text-faint">(optional)</span></span><span class="input-wrap mt-2 max-w-72"><span class="input-prefix" aria-hidden="true">$</span><input id="estimated-federal-payments" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" aria-describedby="estimated-payments-help" /></span><span id="estimated-payments-help" class="field-help mt-2">Total payments made or planned for the {ACTIVE_TAX_YEAR.year} tax year, separate from W-2 withholding. Blank and zero are accepted.</span></label>
+          <label class="field-label" for="estimated-federal-payments"><span>Estimated federal tax payments <span class="font-normal text-faint">(optional)</span></span><span class="input-wrap mt-2 max-w-72"><span class="input-prefix" aria-hidden="true">$</span><input id="estimated-federal-payments" class="number-input pl-8" type="number" min="0" step="any" value="0" inputmode="decimal" aria-describedby="estimated-payments-help" /></span><span id="estimated-payments-help" class="field-help mt-2">Total payments made or planned for the <span id="estimated-payments-year">{DEFAULT_TAX_YEAR}</span> tax year, separate from W-2 withholding. Blank and zero are accepted.</span></label>
         </div>
       </details>
 
       <fieldset id="qbi-fields" class="details-card space-y-4 border-0 p-4" hidden>
         <legend class="px-1 text-sm font-semibold text-ink">Higher-income QBI details</legend>
-        <p class="field-help">Your estimate enters the {ACTIVE_TAX_YEAR.year} QBI limits. These answers affect whether any QBI deduction is included.</p>
+        <p class="field-help">Your estimate enters the <span id="qbi-year">{DEFAULT_TAX_YEAR}</span> QBI limits. These answers affect whether any QBI deduction is included.</p>
         <label class="field-label" for="sstb-status"><span>Is this business a specified-service trade or business?</span><select id="sstb-status" class="select-input mt-2"><option value="unsure" selected>Not sure</option><option value="no">No</option><option value="yes">Yes</option></select><span class="field-help mt-2">Examples can include consulting, performing arts, and some income tied to your name or identity. The rules are specific.</span></label>
         <label id="qualified-property-field" class="field-label" for="qualified-property-ubia"><span>Qualified property basis (UBIA)</span><span class="input-wrap mt-2 max-w-72"><span class="input-prefix" aria-hidden="true">$</span><input id="qualified-property-ubia" class="number-input pl-8" type="number" min="0" step="any" value="" inputmode="decimal" placeholder="Enter 0 if none" aria-describedby="ubia-help" /></span><span id="ubia-help" class="field-help mt-2">Use original basis of eligible tangible depreciable property still in its depreciable period, not current market value.</span></label>
       </fieldset>
@@ -209,7 +243,7 @@ import { STATES } from '../lib/tax/states';
           <div><p class="text-xs text-muted">Annual business profit</p><strong id="break-even-business-profit" class="mt-1 block text-ink">$0</strong></div>
           <div><p class="text-xs text-muted">Monthly business take-home</p><strong id="break-even-take-home-monthly" class="mt-1 block text-ink">$0</strong></div>
           <div><p class="text-xs text-muted">Business reserve rate</p><strong id="break-even-reserve-rate" class="mt-1 block text-ink">0%</strong></div>
-          <div><p class="text-xs text-muted">Reserve for invoice</p><strong id="break-even-invoice-reserve" class="mt-1 block text-ink">$0</strong><span id="break-even-invoice-context" class="mt-1 block text-xs text-muted">for this invoice</span></div>
+          <div><p class="text-xs text-muted">Reserve for invoice</p><strong id="break-even-invoice-reserve" class="mt-1 block text-ink">$0.00</strong><span id="break-even-invoice-context" class="mt-1 block text-xs text-muted">for this invoice</span></div>
         </div>
         <p class="mt-3 text-sm leading-6 text-muted">Revenue is fully used by expenses, so business profit and reserve are $0. The household federal estimate below still includes W-2 wages and payments entered.</p>
       </div>
@@ -231,6 +265,7 @@ import { STATES } from '../lib/tax/states';
           <div class="tax-row font-semibold text-ink"><span id="household-federal-balance-label">Remaining federal balance</span><strong id="household-federal-balance">—</strong></div>
         </div>
         <p id="household-federal-balance-note" class="mt-2 text-xs leading-5 text-muted"></p>
+        <p id="household-w2-warnings" class="mt-2 rounded-lg border border-loss/25 bg-loss-soft px-3 py-2 text-xs leading-5 text-loss" role="status" aria-live="polite" hidden></p>
       </div>
 
       <div class="mt-5 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">

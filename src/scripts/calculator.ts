@@ -1,8 +1,8 @@
-import { ACTIVE_TAX_YEAR } from '../lib/tax/activeYear';
+import { DEFAULT_TAX_YEAR, getTaxYearData } from '../lib/tax/activeYear';
 import { estimateTax } from '../lib/tax/estimate';
 import { hasNoIndividualIncomeTax, isStateCode } from '../lib/tax/states';
 import type { StateCode } from '../lib/tax/states';
-import { FILING_STATUSES } from '../lib/tax/types';
+import { FILING_STATUSES, SUPPORTED_TAX_YEARS } from '../lib/tax/types';
 import type {
   EstimateInput,
   EstimateResult,
@@ -12,6 +12,7 @@ import type {
   SpouseW2Details,
   SstbAnswer,
   StateTaxTreatment,
+  SupportedTaxYear,
   TaxpayerW2Details,
 } from '../lib/tax/types';
 
@@ -19,6 +20,7 @@ type RevenuePeriod = 'annual' | 'monthly';
 type ExpenseMode = 'percent' | 'flat';
 
 interface CalculatorFormState {
+  taxYear: SupportedTaxYear;
   revenuePeriod: RevenuePeriod;
   grossRevenue: number;
   expenseMode: ExpenseMode;
@@ -92,6 +94,16 @@ function parseSstbAnswer(value: string): SstbAnswer {
   return 'unsure';
 }
 
+function parseTaxYear(value: string | undefined): SupportedTaxYear {
+  const numericYear = Number(value);
+  return SUPPORTED_TAX_YEARS.find((year) => year === numericYear) ?? DEFAULT_TAX_YEAR;
+}
+
+function readSelectedTaxYear(): SupportedTaxYear {
+  const selectedButton = document.querySelector<HTMLButtonElement>('[data-tax-year][aria-pressed="true"]');
+  return parseTaxYear(selectedButton?.dataset.taxYear);
+}
+
 function readCalculatorFormState(): CalculatorFormState {
   const stateValue = requiredSelect('state-code').value;
   const ubiaInput = requiredInput('qualified-property-ubia');
@@ -99,6 +111,7 @@ function readCalculatorFormState(): CalculatorFormState {
   const ubia = ubiaValue === '' ? null : readNumber(ubiaInput);
 
   return {
+    taxYear: readSelectedTaxYear(),
     revenuePeriod: document.querySelector<HTMLButtonElement>('[data-revenue-period="monthly"]')?.getAttribute('aria-pressed') === 'true'
       ? 'monthly'
       : 'annual',
@@ -122,6 +135,7 @@ function readCalculatorFormState(): CalculatorFormState {
       box4: readNumber(requiredInput('taxpayer-box4')),
       box5: readNumber(requiredInput('taxpayer-box5')),
       box6: readNumber(requiredInput('taxpayer-box6')),
+      hasMultipleEmployers: requiredInput('taxpayer-multiple-employers').checked,
     },
     spouseW2: {
       box1: readNumber(requiredInput('spouse-box1')),
@@ -129,6 +143,7 @@ function readCalculatorFormState(): CalculatorFormState {
       box4: readNumber(requiredInput('spouse-box4')),
       box5: readNumber(requiredInput('spouse-box5')),
       box6: readNumber(requiredInput('spouse-box6')),
+      hasMultipleEmployers: requiredInput('spouse-multiple-employers').checked,
     },
     qbiHighIncomeDetails: {
       sstb: parseSstbAnswer(requiredSelect('sstb-status').value),
@@ -147,6 +162,7 @@ function normalizeCalculatorForm(state: CalculatorFormState): EstimateInput {
     : state.expenseValue;
 
   return {
+    taxYear: state.taxYear,
     filingStatus: state.filingStatus,
     grossReceipts,
     businessExpenses,
@@ -163,6 +179,13 @@ const usd = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
   maximumFractionDigits: 0,
+});
+
+const usdWithCents = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 });
 
 const inputUsd = new Intl.NumberFormat('en-US', {
@@ -183,6 +206,10 @@ const inputPercent = new Intl.NumberFormat('en-US', {
 
 function formatCurrency(amount: number): string {
   return usd.format(amount);
+}
+
+function formatCurrencyWithCents(amount: number): string {
+  return usdWithCents.format(amount);
 }
 
 function formatInputCurrency(amount: number): string {
@@ -226,9 +253,11 @@ function updateExpenseControls(): void {
   const flatField = requiredElement('expense-flat-field', HTMLLabelElement);
   const percentSlider = requiredElement('expense-percent-slider', HTMLDivElement);
   const flatSlider = requiredElement('expense-flat-slider', HTMLDivElement);
+  const percentRange = requiredInput('expense-percent-range');
   if (percentageInput.value.trim() !== '' && Number.isFinite(percentageValue) && percentageValue > 100) {
     percentageInput.value = '100';
   }
+  percentRange.value = String(Math.min(100, readNumber(percentageInput)));
   percentField.hidden = isFlat;
   percentSlider.hidden = isFlat;
   flatField.hidden = !isFlat;
@@ -243,6 +272,23 @@ function updateSpouseFields(filingStatus: FilingStatus): void {
   requiredElement('spouse-wages-fields', HTMLDivElement).hidden = filingStatus !== 'marriedJoint';
 }
 
+function updateTaxYearLabels(taxYear: SupportedTaxYear): void {
+  const yearString = String(taxYear);
+  const yearData = getTaxYearData(taxYear);
+
+  setText('taxpayer-multiple-employers-year', yearString);
+  setText('spouse-multiple-employers-year', yearString);
+  setText('estimated-payments-year', yearString);
+  setText('qbi-year', yearString);
+  setText('footer-tax-year', yearString);
+  setText(
+    'tax-year-note',
+    yearData.verificationStatus === 'planningFiguresWithDraftReturnForms'
+      ? 'Rev. Proc. 2025-32 & SSA figures · 2026 IRS forms are drafts'
+      : 'Final 2025 IRS forms & instructions',
+  );
+}
+
 function updateQbiFields(result: EstimateResult, filingStatus: FilingStatus): void {
   const fields = requiredElement('qbi-fields', HTMLFieldSetElement);
   const isHighIncome = result.kind === 'profit'
@@ -255,7 +301,7 @@ function updateQbiFields(result: EstimateResult, filingStatus: FilingStatus): vo
     return;
   }
 
-  const thresholds = ACTIVE_TAX_YEAR.qbi.threshold[filingStatus];
+  const thresholds = getTaxYearData(result.taxYear).qbi.threshold[filingStatus];
   const sstbFullyPhasedOut = parseSstbAnswer(requiredSelect('sstb-status').value) === 'yes'
     && result.taxableIncomeBeforeQbi >= thresholds.threshold + thresholds.phaseInRange;
   propertyField.hidden = sstbFullyPhasedOut;
@@ -353,6 +399,30 @@ function getFederalBalanceNote(balance: HouseholdFederalEstimate['balance']): st
   return 'W-2 withholding, eligible wage-tax credits, and estimated payments match the modeled liability.';
 }
 
+function renderW2Warnings(warnings: HouseholdFederalEstimate['warnings']): void {
+  const taxpayerWarnings = warnings
+    .filter((warning) => warning.person === 'taxpayer')
+    .map((warning) => warning.message);
+  const spouseWarnings = warnings
+    .filter((warning) => warning.person === 'spouse')
+    .map((warning) => warning.message);
+  const taxpayerBanner = requiredElement('taxpayer-w2-warning', HTMLParagraphElement);
+  const spouseBanner = requiredElement('spouse-w2-warning', HTMLParagraphElement);
+  const householdBanner = requiredElement('household-w2-warnings', HTMLParagraphElement);
+
+  taxpayerBanner.hidden = taxpayerWarnings.length === 0;
+  taxpayerBanner.textContent = taxpayerWarnings.join(' ');
+  spouseBanner.hidden = spouseWarnings.length === 0;
+  spouseBanner.textContent = spouseWarnings.join(' ');
+  householdBanner.hidden = warnings.length === 0;
+  householdBanner.textContent = warnings.map((warning) => warning.message).join(' ');
+
+  const taxpayerBox5Invalid = warnings.some((warning) => warning.code === 'taxpayerMedicareWagesMissing');
+  const spouseBox5Invalid = warnings.some((warning) => warning.code === 'spouseMedicareWagesMissing');
+  requiredInput('taxpayer-box5').setAttribute('aria-invalid', String(taxpayerBox5Invalid));
+  requiredInput('spouse-box5').setAttribute('aria-invalid', String(spouseBox5Invalid));
+}
+
 function renderHouseholdFederal(estimate: HouseholdFederalEstimate): void {
   setText('household-federal-liability', formatCurrency(estimate.liability));
   setText(
@@ -374,6 +444,7 @@ function renderHouseholdFederal(estimate: HouseholdFederalEstimate): void {
   setText('household-federal-balance-label', getFederalBalanceLabel(estimate.balance));
   setText('household-federal-balance', formatCurrency(estimate.balance.amount));
   setText('household-federal-balance-note', getFederalBalanceNote(estimate.balance));
+  renderW2Warnings(estimate.warnings);
 }
 
 function renderProfit(result: Extract<EstimateResult, { kind: 'profit' }>, invoiceAmount: number): void {
@@ -381,7 +452,7 @@ function renderProfit(result: Extract<EstimateResult, { kind: 'profit' }>, invoi
   setText('take-home-monthly', formatCurrency(result.takeHomeMonthly));
   setText('business-profit', formatCurrency(result.businessProfit));
   setText('reserve-recommendation', `Save ${result.reservePercent}% of each invoice`);
-  setText('invoice-reserve-amount', formatCurrency(Math.ceil(invoiceAmount * result.reservePercent / 100)));
+  setText('invoice-reserve-amount', formatCurrencyWithCents(invoiceAmount * result.reservePercent / 100));
   setText('federal-tax-amount', formatCurrency(result.federalIncomeTax));
   setText('se-tax-amount', formatCurrency(result.selfEmploymentTax));
   setText('additional-medicare-amount', formatCurrency(result.additionalMedicareTax));
@@ -423,7 +494,7 @@ function renderResult(result: EstimateResult, invoiceAmount: number): void {
   setText('break-even-reserve-rate', percent.format(result.reserveRate));
   setText(
     'break-even-invoice-reserve',
-    formatCurrency(Math.ceil(invoiceAmount * result.reservePercent / 100)),
+    formatCurrencyWithCents(invoiceAmount * result.reservePercent / 100),
   );
   setText('break-even-invoice-context', `for a ${formatCurrency(invoiceAmount)} invoice`);
   setText('profit-status-note', 'Break-even. No positive business profit is available for a tax reserve or take-home estimate.');
@@ -456,8 +527,9 @@ function buildCalculationSummary(
   const stateReserveInput = state.stateReserveRate === null
     ? 'not entered'
     : `${inputPercent.format(state.stateReserveRate)} (user assumption)`;
+  const taxYearData = getTaxYearData(result.taxYear);
   const lines = [
-    `SetAside · ${ACTIVE_TAX_YEAR.year} tax estimate`,
+    `SetAside · ${result.taxYear} tax estimate`,
     'Scenario inputs',
     `Filing status: ${getFilingStatusLabel(state.filingStatus)}`,
     receiptsInput,
@@ -482,6 +554,7 @@ function buildCalculationSummary(
     `Additional Medicare Tax withheld: ${formatCurrency(result.householdFederal.payments.additionalMedicareTaxWithholding)}`,
     `Total modeled federal payments: ${formatCurrency(result.householdFederal.payments.total)}`,
     `${getFederalBalanceLabel(result.householdFederal.balance)}: ${formatCurrency(result.householdFederal.balance.amount)}`,
+    ...result.householdFederal.warnings.map((warning) => `W-2 warning: ${warning.message}`),
   ];
 
   if (result.kind === 'loss') {
@@ -495,7 +568,7 @@ function buildCalculationSummary(
     lines.push(`Monthly business take-home: ${formatCurrency(result.takeHomeMonthly)}`);
     lines.push(`Business tax and reserve: ${formatCurrency(result.totalEstimatedTax)}`);
     lines.push(`Invoice reserve rate: ${result.reservePercent}%`);
-    lines.push(`Reserve for a ${formatInputCurrency(state.invoiceAmount)} invoice: ${formatCurrency(Math.ceil(state.invoiceAmount * result.reservePercent / 100))}`);
+    lines.push(`Reserve for a ${formatInputCurrency(state.invoiceAmount)} invoice: ${formatCurrencyWithCents(state.invoiceAmount * result.reservePercent / 100)}`);
   } else {
     lines.push('Business result');
     lines.push(`Annual business profit: ${formatCurrency(result.businessProfit)}`);
@@ -507,11 +580,14 @@ function buildCalculationSummary(
     lines.push(`Estimated annual take-home: ${formatCurrency(result.takeHomeAnnual)}`);
     lines.push(`Estimated monthly take-home: ${formatCurrency(result.takeHomeMonthly)}`);
     lines.push(`Suggested invoice reserve rate: ${result.reservePercent}%`);
-    lines.push(`Reserve for a ${formatInputCurrency(state.invoiceAmount)} invoice: ${formatCurrency(Math.ceil(state.invoiceAmount * result.reservePercent / 100))}`);
+    lines.push(`Reserve for a ${formatInputCurrency(state.invoiceAmount)} invoice: ${formatCurrencyWithCents(state.invoiceAmount * result.reservePercent / 100)}`);
     lines.push(`QBI: ${result.qbiTreatment.status === 'included' ? `${formatCurrency(result.qbiTreatment.deduction)} deduction` : result.qbiTreatment.reason}`);
   }
 
-  lines.push(`Assumptions and limits: ${ACTIVE_TAX_YEAR.year} federal rules; one U.S. sole-proprietor business; standard deduction; excludes itemized deductions and other tax credits; state/local reserve is a user input, not a calculated state tax; business losses are not applied to federal income.`);
+  const sourceNote = taxYearData.verificationStatus === 'planningFiguresWithDraftReturnForms'
+    ? ' (verified planning figures from IRS Rev. Proc. 2025-32 and SSA; year-end IRS return forms are drafts)'
+    : '';
+  lines.push(`Assumptions and limits: ${result.taxYear} federal rules${sourceNote}; one U.S. sole-proprietor business; standard deduction; excludes itemized deductions and other tax credits; state/local reserve is a user input, not a calculated state tax; business losses are not applied to federal income.`);
   lines.push('Planning estimate only. Not tax advice or a tax return.');
 
   return lines.join('\n');
@@ -531,6 +607,7 @@ function formatW2Inputs(label: string, w2: TaxpayerW2Details | SpouseW2Details):
     `Box 4 ${formatInputCurrency(w2.box4)}`,
     `Box 5 ${formatInputCurrency(w2.box5)}`,
     `Box 6 ${formatInputCurrency(w2.box6)}`,
+    `2+ employers: ${w2.hasMultipleEmployers ? 'yes' : 'no'}`,
   );
 
   return `${label}: ${boxes.join(', ')}`;
@@ -579,6 +656,7 @@ function initializeCalculator(): void {
   const expenseFlatRange = requiredInput('expense-flat-range');
   let latestFormState = readCalculatorFormState();
   let latestResult: EstimateResult = estimateTax(normalizeCalculatorForm(latestFormState));
+  let cachedToggleSource: { fromPeriod: RevenuePeriod; value: number } | null = null;
 
   const update = () => {
     const stateRateInput = requiredInput('state-reserve-rate');
@@ -589,12 +667,17 @@ function initializeCalculator(): void {
     updateRevenueControls();
     updateExpenseControls();
     latestFormState = readCalculatorFormState();
+    updateTaxYearLabels(latestFormState.taxYear);
     latestResult = estimateTax(normalizeCalculatorForm(latestFormState));
     updateSpouseFields(latestFormState.filingStatus);
     updateQbiFields(latestResult, latestFormState.filingStatus);
     renderResult(latestResult, latestFormState.invoiceAmount);
     setText('copy-status', '');
   };
+
+  revenueInput.addEventListener('input', () => {
+    cachedToggleSource = null;
+  });
 
   revenueInput.addEventListener('blur', () => {
     const value = revenueInput.value.trim().replaceAll(',', '');
@@ -606,6 +689,7 @@ function initializeCalculator(): void {
   });
 
   revenueRange.addEventListener('input', () => {
+    cachedToggleSource = null;
     revenueInput.value = formatGroupedNumber(revenueRange.value);
   });
   expensePercentRange.addEventListener('input', () => {
@@ -618,17 +702,38 @@ function initializeCalculator(): void {
   form.addEventListener('change', update);
   form.addEventListener('submit', (event) => event.preventDefault());
 
+  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-tax-year]')) {
+    button.addEventListener('click', () => {
+      const nextYear = parseTaxYear(button.dataset.taxYear);
+      if (nextYear === readSelectedTaxYear()) {
+        return;
+      }
+
+      for (const yearButton of document.querySelectorAll<HTMLButtonElement>('[data-tax-year]')) {
+        const selected = yearButton === button;
+        yearButton.classList.toggle('is-selected', selected);
+        yearButton.setAttribute('aria-pressed', String(selected));
+      }
+
+      update();
+    });
+  }
+
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-revenue-period]')) {
     button.addEventListener('click', () => {
-      const nextPeriod = button.dataset.revenuePeriod;
+      const nextPeriod: RevenuePeriod = button.dataset.revenuePeriod === 'monthly' ? 'monthly' : 'annual';
       const currentIsMonthly = document.querySelector<HTMLButtonElement>('[data-revenue-period="monthly"]')?.getAttribute('aria-pressed') === 'true';
+      const currentPeriod: RevenuePeriod = currentIsMonthly ? 'monthly' : 'annual';
 
-      if ((nextPeriod === 'monthly') === currentIsMonthly) {
+      if (nextPeriod === currentPeriod) {
         return;
       }
 
       const currentValue = readNumber(revenueInput);
-      const convertedValue = nextPeriod === 'monthly' ? currentValue / 12 : currentValue * 12;
+      const convertedValue = cachedToggleSource !== null && cachedToggleSource.fromPeriod === nextPeriod
+        ? cachedToggleSource.value
+        : (nextPeriod === 'monthly' ? currentValue / 12 : currentValue * 12);
+      cachedToggleSource = { fromPeriod: currentPeriod, value: currentValue };
       revenueInput.value = formatGroupedNumber(String(Number(convertedValue.toFixed(2))));
 
       for (const periodButton of document.querySelectorAll<HTMLButtonElement>('[data-revenue-period]')) {
@@ -643,6 +748,28 @@ function initializeCalculator(): void {
 
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-expense-mode]')) {
     button.addEventListener('click', () => {
+      const nextMode: ExpenseMode = button.dataset.expenseMode === 'flat' ? 'flat' : 'percent';
+      const currentIsFlat = document.querySelector<HTMLButtonElement>('[data-expense-mode="flat"]')?.getAttribute('aria-pressed') === 'true';
+
+      if ((nextMode === 'flat') === currentIsFlat) {
+        return;
+      }
+
+      const currentIsMonthly = document.querySelector<HTMLButtonElement>('[data-revenue-period="monthly"]')?.getAttribute('aria-pressed') === 'true';
+      const annualizedReceipts = readNumber(revenueInput) * (currentIsMonthly ? 12 : 1);
+
+      if (nextMode === 'flat') {
+        const currentPercent = Math.min(100, readNumber(expensePercentInput));
+        const flatAmount = annualizedReceipts * currentPercent / 100;
+        expenseFlatInput.value = String(Number(flatAmount.toFixed(2)));
+      } else {
+        const currentFlat = readNumber(expenseFlatInput);
+        const percentAmount = annualizedReceipts > 0
+          ? Math.min(100, (currentFlat / annualizedReceipts) * 100)
+          : 0;
+        expensePercentInput.value = String(Number(percentAmount.toFixed(2)));
+      }
+
       for (const modeButton of document.querySelectorAll<HTMLButtonElement>('[data-expense-mode]')) {
         const selected = modeButton === button;
         modeButton.classList.toggle('is-selected', selected);

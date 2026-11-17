@@ -90,7 +90,8 @@ summary:focus-visible {
   display: none !important;
 }
 
-.panel {
+@layer components {
+  .panel {
   border: 1px solid var(--color-line);
   border-radius: 16px;
   background: var(--color-surface);
@@ -214,6 +215,7 @@ summary:focus-visible {
 }
 
 .select-input {
+  -webkit-appearance: none;
   appearance: none;
   padding: 10px 34px 10px 12px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='m5 7.5 5 5 5-5' stroke='%23737b86' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -414,6 +416,7 @@ summary:focus-visible {
 .faq-question::-webkit-details-marker { display: none; }
 .faq-question svg { width: 17px; height: 17px; flex: 0 0 auto; color: var(--color-muted); transition: transform 140ms ease; }
 .faq-item[open] .faq-question svg { transform: rotate(180deg); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,
